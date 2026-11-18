@@ -411,6 +411,49 @@ fieldset.vis legend { font-weight: 600; margin-bottom: 6px; }
 fieldset.vis label.check { flex-direction: row; align-items: flex-start; gap: 8px; font-weight: 400; }
 .mbody label.check { flex-direction: row; align-items: center; gap: 8px; }
 
+
+/* Side-by-side pages (writer's view) */
+:root { --desk: #eef1f5; --page: #ffffff; --page-edge: #d8dee4; --page-ink: #1f2328; --ins-ink: #116329; --ins-bg: rgba(46,160,67,.14); --del-ink: #a40e26; --del-bg: rgba(207,34,46,.08); --bar-ins: #2da44e; --bar-del: #cf222e; --page-font: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, "Times New Roman", serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --desk: #010409; --page: #161b22; --page-edge: #30363d; --page-ink: #e6edf3; --ins-ink: #56d364; --ins-bg: rgba(46,160,67,.2); --del-ink: #ff7b72; --del-bg: rgba(248,81,73,.12); --bar-ins: #3fb950; --bar-del: #f85149; } }
+:root[data-theme="dark"] { --desk: #010409; --page: #161b22; --page-edge: #30363d; --page-ink: #e6edf3; --ins-ink: #56d364; --ins-bg: rgba(46,160,67,.2); --del-ink: #ff7b72; --del-bg: rgba(248,81,73,.12); --bar-ins: #3fb950; --bar-del: #f85149; }
+.docdiff { display: grid; grid-template-columns: minmax(300px, 1fr) 76px minmax(300px, 1fr); background: var(--desk); padding: 24px 20px 28px; min-width: 720px; }
+.docdiff .dc, .docdiff .dhead, .docdiff .dfoot { background: var(--page); border-left: 1px solid var(--page-edge); border-right: 1px solid var(--page-edge); color: var(--page-ink); }
+.docdiff .dhead { border-top: 1px solid var(--page-edge); border-radius: 4px 4px 0 0; padding: 14px 48px 14px; border-bottom: 1px solid var(--page-edge); margin-bottom: 0; box-shadow: 0 -1px 0 rgba(0,0,0,.02); }
+.docdiff .dhead + .dg, .docdiff .dg-head { background: transparent; }
+.dtitle { display: flex; align-items: center; gap: 6px; font: 600 11px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.dhead.R .dtitle { color: var(--ins-ink); } .dhead.L .dtitle { color: var(--muted); }
+.dsub { font: 600 15px/1.35 var(--font); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dmeta { font: 12px var(--font); color: var(--muted); margin-top: 2px; }
+.docdiff .dfoot { border-bottom: 1px solid var(--page-edge); border-radius: 0 0 4px 4px; height: 36px; box-shadow: 0 6px 14px rgba(31,35,40,.06); }
+.docdiff .dc { position: relative; padding: 0 48px; font: 15.5px/1.7 var(--page-font); white-space: pre-wrap; word-wrap: break-word; }
+.docdiff .dc.blank { min-height: .8em; }
+.docdiff .dc.h1 { font: 700 1.55em/1.3 var(--font); padding-top: .5em; padding-bottom: .15em; }
+.docdiff .dc.h2 { font: 700 1.2em/1.35 var(--font); padding-top: .55em; padding-bottom: .1em; }
+.docdiff .dc.h3 { font: 600 1.05em/1.4 var(--font); padding-top: .45em; }
+.docdiff .dc.li { padding-left: 68px; }
+.docdiff .dc.li .bul { position: absolute; left: 52px; color: var(--muted); }
+.docdiff .dc.quote { color: var(--muted); font-style: italic; box-shadow: inset 51px 0 0 var(--page), inset 54px 0 0 var(--page-edge); padding-left: 64px; }
+.docdiff .dc.src { font: 11.5px/1.75 var(--mono); color: var(--muted); opacity: .85; }
+.docdiff .dc .dcite { font: .85em var(--font); color: var(--accent); }
+.docdiff .dc .dlink { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.docdiff .dc.chg::before, .docdiff .dc.add::before, .docdiff .dc.cut::before { content: ""; position: absolute; left: 22px; top: 3px; bottom: 3px; width: 3px; border-radius: 2px; }
+.docdiff .dc.L.chg::before, .docdiff .dc.cut::before { background: var(--bar-del); }
+.docdiff .dc.R.chg::before, .docdiff .dc.add::before { background: var(--bar-ins); }
+.docdiff .dc.cut { color: var(--del-ink); text-decoration: line-through; text-decoration-thickness: 1px; background: linear-gradient(var(--del-bg), var(--del-bg)) var(--page); }
+.docdiff .dc.add { color: var(--ins-ink); background: linear-gradient(var(--ins-bg), var(--ins-bg)) var(--page); }
+.docdiff .dc.empty { background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--desk) 6px 7px); opacity: .9; }
+.docdiff del { color: var(--del-ink); text-decoration: line-through; text-decoration-thickness: 1.5px; background: var(--del-bg); border-radius: 2px; }
+.docdiff ins { color: var(--ins-ink); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; background: var(--ins-bg); border-radius: 2px; }
+.docdiff .dg { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 2px 0; }
+.dchip { font: 600 10.5px/1 var(--font); padding: 3px 7px; border-radius: 2em; border: 1px solid var(--border); background: var(--canvas); color: var(--muted); white-space: nowrap; }
+.dchip.add { color: var(--ins-ink); border-color: var(--bar-ins); } .dchip.cut { color: var(--del-ink); border-color: var(--bar-del); } .dchip.edit { color: var(--attention); border-color: var(--attention); }
+.dnum { font: 10.5px var(--font); font-variant-numeric: tabular-nums; }
+.docdiff .dfold { grid-column: 1 / -1; display: flex; justify-content: center; padding: 6px 0; background: linear-gradient(to right, var(--page) 0 calc(50% - 38px), transparent calc(50% - 38px) calc(50% + 38px), var(--page) calc(50% + 38px)); border-left: 1px solid var(--page-edge); border-right: 1px solid var(--page-edge); }
+.docdiff .dfold button { font: 12px var(--font); color: var(--accent); background: var(--canvas); border: 1px dashed var(--border); border-radius: 2em; padding: 3px 12px; cursor: pointer; }
+.docdiff .dhid:not([hidden]) { display: contents; }
+.addc.doc { margin-left: 0; left: 4px; top: 4px; }
+.docdiff .dc:hover .addc, .docdiff .addc:focus-visible { opacity: 1; transform: none; }
+
 /* Dialog + toast */
 .overlay { position: fixed; inset: 0; background: rgba(31,35,40,.5); display: flex; align-items: flex-start; justify-content: center; padding: 10vh 16px; z-index: 50; }
 .modal { width: min(560px, 100%); background: var(--canvas); border-radius: 12px; box-shadow: var(--overlay-shadow); display: flex; flex-direction: column; max-height: 80vh; }
@@ -691,7 +734,7 @@ function persist(p, now) {
 }
 
 /* ============ Version model ============ */
-const S = { projects: [], pid: null, route: "files", dir: "", file: null, vid: null, cmp: { a: null, b: null }, mode: "unified", importLog: null };
+const S = { projects: [], pid: null, route: "files", dir: "", file: null, vid: null, cmp: { a: null, b: null }, mode: "split", importLog: null };
 const P = () => S.projects.find(p => p.id === S.pid);
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 function newProject(name) {
@@ -1461,19 +1504,22 @@ function renderDiffs(p, a, b, mount, opts = {}) {
   const ins = files.reduce((s, f) => s + f.ins, 0), del = files.reduce((s, f) => s + f.del, 0);
   if (!files.length) { mount.innerHTML = `<div class="Box blankslate">${ic("check")}<h3>There isn't anything to compare</h3><p class="muted">These two are identical.</p></div>`; return; }
   mount.innerHTML = `<div class="toc"><span>Showing <strong>${files.length} changed file${files.length > 1 ? "s" : ""}</strong> with <span class="add">${ins} added</span> and <span class="del">${del} removed</span> words.</span>
-      <div class="seg" role="group" aria-label="Diff layout"><button aria-pressed="${S.mode === "unified"}" data-dm="unified">Unified</button><button aria-pressed="${S.mode === "split"}" data-dm="split">Split</button></div></div>
+      <div class="seg" role="group" aria-label="Diff layout"><button aria-pressed="${S.mode === "unified"}" data-dm="unified">Unified</button><button aria-pressed="${S.mode === "split"}" data-dm="split">${ic("compare")} Side by side</button></div></div>
     ${files.map((f, i) => {
       const inA = a ? refExists(p, a, f.path) : false, inB = refExists(p, b, f.path);
       return `<div class="fdiff" id="fd-${i}"><div class="fdiff-head"><button class="btn-octicon" data-toggle="${i}" aria-label="Collapse file">${ic("chevd")}</button>
         <span class="add">+${f.ins}</span><span class="del">−${f.del}</span>${diffstatBlocks(f.ins, f.del)}${fileIcon(f.path)}<span class="fn">${esc(f.path)}</span>
         ${!inA ? `<span class="label label-success">New</span>` : !inB ? `<span class="label label-danger">Removed</span>` : ""}<span class="label">${typeLabel(f.path)}</span>
         <span class="grow"></span>${p.working[f.path] ? `<button class="btn btn-sm" data-open="${esc(f.path)}">View file</button>` : ""}</div>
-        <div class="fdiff-body" data-path="${esc(f.path)}">${diffTable(f.rows, S.mode, f.path, kindOf(f.path) === "sheet" ? [sheetRowLabels(refText(p, a, f.path)), sheetRowLabels(refText(p, b, f.path))] : null, !!opts.onComment)}</div></div>`;
+        <div class="fdiff-body" data-path="${esc(f.path)}">${S.mode === "split" && kindOf(f.path) !== "sheet"
+          ? docSplit(f.rows, f.path, [pageHead(p, a, f.path, "Before"), pageHead(p, b, f.path, "After")], !!opts.onComment)
+          : diffTable(f.rows, S.mode, f.path, kindOf(f.path) === "sheet" ? [sheetRowLabels(refText(p, a, f.path)), sheetRowLabels(refText(p, b, f.path))] : null, !!opts.onComment)}</div></div>`;
     }).join("")}`;
   mount.querySelectorAll("[data-dm]").forEach(x => x.onclick = () => { S.mode = x.dataset.dm; renderDiffs(p, a, b, mount, opts); });
   if (opts.onComment) mount.querySelectorAll("[data-cm]").forEach(x => x.onclick = () => { const body = x.closest(".fdiff-body"); opts.onComment(body.dataset.path, x.dataset.cl, x.dataset.cm); });
   mount.querySelectorAll("[data-toggle]").forEach(x => x.onclick = () => { const box = $("#fd-" + x.dataset.toggle, mount); box.classList.toggle("closed"); x.innerHTML = box.classList.contains("closed") ? ic("chevr") : ic("chevd"); });
   mount.querySelectorAll("[data-open]").forEach(x => x.onclick = () => go("file", { file: x.dataset.open }));
+  mount.querySelectorAll("[data-dexp]").forEach(x => x.onclick = () => { const h = x.closest(".dfold").nextElementSibling; if (h) h.hidden = false; x.closest(".dfold").remove(); });
   mount.querySelectorAll("[data-exp]").forEach(x => x.onclick = () => { const tb = x.closest("tbody").nextElementSibling; if (tb && tb.hasAttribute("hidden")) { tb.hidden = false; x.closest("tbody").querySelectorAll("[data-exp]").forEach(e => e.remove()); } });
 }
 function diffTable(rows, mode, file, labels, commentable) {
@@ -1518,6 +1564,71 @@ function diffTable(rows, mode, file, labels, commentable) {
   }
   const cols = split ? `<col style="width:52px"><col><col style="width:52px"><col>` : `<col style="width:52px"><col style="width:52px"><col style="width:20px"><col>`;
   return `<table class="diff"><colgroup>${cols}</colgroup>${html}</table>`;
+}
+
+
+/* ============ Side-by-side "pages" view for prose (Word/Docs-like) ============ */
+const unesc = s => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+const stripTags = h => (h || "").replace(/<[^>]+>/g, "");
+function pageHead(p, ref, path, side) {
+  const text = ref ? refText(p, ref, path) : "";
+  const v = ref && ref !== "W" ? p.versions[ref] : null;
+  const label = ref === "W" ? "Current text" : v ? v.message : "Not in this version";
+  const when = ref === "W" ? "unsaved changes included" : v ? shortDate(v.time) + " · " + ref.slice(0, 7) : "";
+  return { side, label, when, words: wordCount(text), exists: ref ? refExists(p, ref, path) : false };
+}
+const TEX_SRC = /^\\(documentclass|usepackage|begin|end|maketitle|title|author|date|input|include|bibliography|bibliographystyle|label|appendix|newcommand|renewcommand|setlength|tableofcontents|clearpage|newpage|centering)\b/;
+function docLine(html, file) {
+  const raw = unesc(stripTags(html)), ext = extOf(file), t = raw.trim();
+  if (!t) return { cls: "blank", html: "" };
+  let m, cls = "p", h = html;
+  if (ext === "md" || ext === "markdown") {
+    if ((m = /^(#{1,6})\s+/.exec(t))) { cls = "h" + Math.min(3, m[1].length); h = h.replace(/^(\s*)(<(?:ins|del)>)?#{1,6}\s+/, "$1$2"); }
+    else if (/^\s*[-*]\s+/.test(raw)) { cls = "li"; h = h.replace(/^(\s*)(<(?:ins|del)>)?\s*[-*]\s+/, "$1$2"); }
+    else if (/^\s*\d+\.\s+/.test(raw)) { cls = "li num"; }
+    else if (/^>\s?/.test(t)) { cls = "quote"; h = h.replace(/^(\s*)(<(?:ins|del)>)?&gt;\s?/, "$1$2"); }
+    h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>").replace(/\[([^\]]+)\]\([^)]*\)/g, '<span class="dlink">$1</span>');
+  } else if (["tex", "cls", "sty"].includes(ext)) {
+    if (/^%/.test(t) || TEX_SRC.test(t)) cls = "src";
+    else if ((m = /^\\(sub)*section\*?\{/.exec(t))) { cls = (m[0].match(/sub/g) || []).length ? "h3" : "h2"; h = h.replace(/^\s*\\(?:sub)*section\*?\{([\s\S]*)\}\s*$/, "$1"); }
+    else if (/^\\item\b/.test(t)) { cls = "li"; h = h.replace(/^(\s*)(<(?:ins|del)>)?\\item\s*/, "$1$2"); }
+    if (cls !== "src") h = h.replace(/\\textbf\{([^{}]*)\}/g, "<strong>$1</strong>").replace(/\\(?:emph|textit)\{([^{}]*)\}/g, "<em>$1</em>")
+      .replace(/\\cite[pt]?\{([^{}]*)\}/g, '<span class="dcite">[$1]</span>').replace(/---/g, "—").replace(/--/g, "–").replace(/``/g, "“").replace(/''/g, "”").replace(/\\%/g, "%").replace(/\\&amp;/g, "&amp;").replace(/~/g, " ");
+  } else if (ext === "bib") cls = "src";
+  // Source indentation means nothing on a page: drop it so wrapped lines align (keeps any leading <ins>/<del> tag).
+  if (cls !== "src") h = h.replace(/^((?:<(?:ins|del)>)?)[ \t]+/, "$1");
+  return { cls, html: h.replace(/\t/g, "    ") };
+}
+function docSplit(rows, file, heads, commentable) {
+  const docx = kindOf(file) === "docx", unit = unitName(file);
+  const cell = (side, state, html, extra = "") => {
+    if (state === "empty") return `<div class="dc ${side} empty"></div>`;
+    const d = docLine(html, file);
+    return `<div class="dc ${side} ${state} ${d.cls}">${extra}${d.cls === "li" ? '<span class="bul">•</span>' : ""}${d.html || (d.cls === "blank" ? "" : " ")}</div>`;
+  };
+  const chip = (kind, ins, del) => `<div class="dg"><span class="dchip ${kind}">${kind === "edit" ? "Edited" : kind === "add" ? "Added" : "Cut"}</span>${kind === "edit" ? `<span class="dnum"><span class="add">+${ins}</span> <span class="del">−${del}</span></span>` : ""}</div>`;
+  const countIn = (h, tag) => { let n = 0; h.replace(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "g"), (_, x) => { n += wordCount(unesc(x)); return ""; }); return n; };
+  const cb = (txt, n) => commentable ? `<button class="addc doc" data-cm="${stripTags(txt)}" data-cl="${esc(String(n || ""))}" title="Comment on this" aria-label="Comment on this">+</button>` : "";
+  // One margin label per block of consecutive changes of the same kind.
+  let prevKind = null;
+  const label = (kind, ...n) => { const same = kind === prevKind && kind !== "edit"; prevKind = kind; return same ? `<div class="dg"></div>` : chip(kind, ...n); };
+  const rowHtml = r => {
+    if (r.t === "=") { prevKind = null; return cell("L", "same", r.text) + `<div class="dg"></div>` + cell("R", "same", r.text); }
+    if (r.t === "~") return cell("L", "chg", r.L) + label("edit", countIn(r.R, "ins"), countIn(r.L, "del")) + cell("R", "chg", r.R, cb(r.R, docx ? "¶" + r.b : r.b));
+    if (r.t === "-") return cell("L", "cut", r.text, cb(r.text, docx ? "¶" + r.a : r.a)) + label("cut") + cell("R", "empty");
+    return cell("L", "empty") + label("add") + cell("R", "add", r.text, cb(r.text, docx ? "¶" + r.b : r.b));
+  };
+  const C = 2, ch = rows.map(r => r.t !== "=");
+  const near = rows.map((_, i) => { for (let j = Math.max(0, i - C); j <= Math.min(rows.length - 1, i + C); j++) if (ch[j]) return true; return false; });
+  const head = h => `<div class="dhead ${h.side}"><div class="dtitle">${ic(docx ? "fileWord" : "file")}<span>${h.side}</span></div><div class="dsub" title="${esc(h.label)}">${esc(h.label)}</div><div class="dmeta">${h.exists ? `${h.when} · ${h.words.toLocaleString()} word${h.words === 1 ? "" : "s"}` : "file not present"}</div></div>`;
+  let body = "", i = 0;
+  while (i < rows.length) {
+    if (near[i]) { body += rowHtml(rows[i++]); continue; }
+    let hid = "", n = 0, k = 0; while (i < rows.length && !near[i]) { hid += rowHtml(rows[i++]); k++; if (rows[i - 1].text && stripTags(rows[i - 1].text).trim()) n++; }
+    if (k < 3) { body += hid; continue; }
+    body += `<div class="dfold"><button data-dexp>⋯ ${n || "a few"} unchanged ${unit}${n === 1 ? "" : "s"}</button></div><div class="dhid" hidden>${hid}</div>`;
+  }
+  return `<div class="docdiff ${["md", "markdown", "tex", "cls", "sty", "bib"].includes(extOf(file)) ? "rendered" : ""}">${head(heads[0])}<div class="dg dg-head"></div>${head(heads[1])}<div class="dc L blank"></div><div class="dg"></div><div class="dc R blank"></div>${body}<div class="dfoot L"></div><div class="dg"></div><div class="dfoot R"></div></div>`;
 }
 
 /* ============ Compare ============ */

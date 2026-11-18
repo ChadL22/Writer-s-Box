@@ -254,7 +254,7 @@ function persist(p, now) {
 }
 
 /* ============ Version model ============ */
-const S = { projects: [], pid: null, route: "files", dir: "", file: null, vid: null, cmp: { a: null, b: null }, mode: "unified", importLog: null };
+const S = { projects: [], pid: null, route: "files", dir: "", file: null, vid: null, cmp: { a: null, b: null }, mode: "split", importLog: null };
 const P = () => S.projects.find(p => p.id === S.pid);
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 function newProject(name) {

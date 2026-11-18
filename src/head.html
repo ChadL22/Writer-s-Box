@@ -411,6 +411,49 @@ fieldset.vis legend { font-weight: 600; margin-bottom: 6px; }
 fieldset.vis label.check { flex-direction: row; align-items: flex-start; gap: 8px; font-weight: 400; }
 .mbody label.check { flex-direction: row; align-items: center; gap: 8px; }
 
+
+/* Side-by-side pages (writer's view) */
+:root { --desk: #eef1f5; --page: #ffffff; --page-edge: #d8dee4; --page-ink: #1f2328; --ins-ink: #116329; --ins-bg: rgba(46,160,67,.14); --del-ink: #a40e26; --del-bg: rgba(207,34,46,.08); --bar-ins: #2da44e; --bar-del: #cf222e; --page-font: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, "Times New Roman", serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --desk: #010409; --page: #161b22; --page-edge: #30363d; --page-ink: #e6edf3; --ins-ink: #56d364; --ins-bg: rgba(46,160,67,.2); --del-ink: #ff7b72; --del-bg: rgba(248,81,73,.12); --bar-ins: #3fb950; --bar-del: #f85149; } }
+:root[data-theme="dark"] { --desk: #010409; --page: #161b22; --page-edge: #30363d; --page-ink: #e6edf3; --ins-ink: #56d364; --ins-bg: rgba(46,160,67,.2); --del-ink: #ff7b72; --del-bg: rgba(248,81,73,.12); --bar-ins: #3fb950; --bar-del: #f85149; }
+.docdiff { display: grid; grid-template-columns: minmax(300px, 1fr) 76px minmax(300px, 1fr); background: var(--desk); padding: 24px 20px 28px; min-width: 720px; }
+.docdiff .dc, .docdiff .dhead, .docdiff .dfoot { background: var(--page); border-left: 1px solid var(--page-edge); border-right: 1px solid var(--page-edge); color: var(--page-ink); }
+.docdiff .dhead { border-top: 1px solid var(--page-edge); border-radius: 4px 4px 0 0; padding: 14px 48px 14px; border-bottom: 1px solid var(--page-edge); margin-bottom: 0; box-shadow: 0 -1px 0 rgba(0,0,0,.02); }
+.docdiff .dhead + .dg, .docdiff .dg-head { background: transparent; }
+.dtitle { display: flex; align-items: center; gap: 6px; font: 600 11px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.dhead.R .dtitle { color: var(--ins-ink); } .dhead.L .dtitle { color: var(--muted); }
+.dsub { font: 600 15px/1.35 var(--font); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dmeta { font: 12px var(--font); color: var(--muted); margin-top: 2px; }
+.docdiff .dfoot { border-bottom: 1px solid var(--page-edge); border-radius: 0 0 4px 4px; height: 36px; box-shadow: 0 6px 14px rgba(31,35,40,.06); }
+.docdiff .dc { position: relative; padding: 0 48px; font: 15.5px/1.7 var(--page-font); white-space: pre-wrap; word-wrap: break-word; }
+.docdiff .dc.blank { min-height: .8em; }
+.docdiff .dc.h1 { font: 700 1.55em/1.3 var(--font); padding-top: .5em; padding-bottom: .15em; }
+.docdiff .dc.h2 { font: 700 1.2em/1.35 var(--font); padding-top: .55em; padding-bottom: .1em; }
+.docdiff .dc.h3 { font: 600 1.05em/1.4 var(--font); padding-top: .45em; }
+.docdiff .dc.li { padding-left: 68px; }
+.docdiff .dc.li .bul { position: absolute; left: 52px; color: var(--muted); }
+.docdiff .dc.quote { color: var(--muted); font-style: italic; box-shadow: inset 51px 0 0 var(--page), inset 54px 0 0 var(--page-edge); padding-left: 64px; }
+.docdiff .dc.src { font: 11.5px/1.75 var(--mono); color: var(--muted); opacity: .85; }
+.docdiff .dc .dcite { font: .85em var(--font); color: var(--accent); }
+.docdiff .dc .dlink { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.docdiff .dc.chg::before, .docdiff .dc.add::before, .docdiff .dc.cut::before { content: ""; position: absolute; left: 22px; top: 3px; bottom: 3px; width: 3px; border-radius: 2px; }
+.docdiff .dc.L.chg::before, .docdiff .dc.cut::before { background: var(--bar-del); }
+.docdiff .dc.R.chg::before, .docdiff .dc.add::before { background: var(--bar-ins); }
+.docdiff .dc.cut { color: var(--del-ink); text-decoration: line-through; text-decoration-thickness: 1px; background: linear-gradient(var(--del-bg), var(--del-bg)) var(--page); }
+.docdiff .dc.add { color: var(--ins-ink); background: linear-gradient(var(--ins-bg), var(--ins-bg)) var(--page); }
+.docdiff .dc.empty { background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--desk) 6px 7px); opacity: .9; }
+.docdiff del { color: var(--del-ink); text-decoration: line-through; text-decoration-thickness: 1.5px; background: var(--del-bg); border-radius: 2px; }
+.docdiff ins { color: var(--ins-ink); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; background: var(--ins-bg); border-radius: 2px; }
+.docdiff .dg { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 2px 0; }
+.dchip { font: 600 10.5px/1 var(--font); padding: 3px 7px; border-radius: 2em; border: 1px solid var(--border); background: var(--canvas); color: var(--muted); white-space: nowrap; }
+.dchip.add { color: var(--ins-ink); border-color: var(--bar-ins); } .dchip.cut { color: var(--del-ink); border-color: var(--bar-del); } .dchip.edit { color: var(--attention); border-color: var(--attention); }
+.dnum { font: 10.5px var(--font); font-variant-numeric: tabular-nums; }
+.docdiff .dfold { grid-column: 1 / -1; display: flex; justify-content: center; padding: 6px 0; background: linear-gradient(to right, var(--page) 0 calc(50% - 38px), transparent calc(50% - 38px) calc(50% + 38px), var(--page) calc(50% + 38px)); border-left: 1px solid var(--page-edge); border-right: 1px solid var(--page-edge); }
+.docdiff .dfold button { font: 12px var(--font); color: var(--accent); background: var(--canvas); border: 1px dashed var(--border); border-radius: 2em; padding: 3px 12px; cursor: pointer; }
+.docdiff .dhid:not([hidden]) { display: contents; }
+.addc.doc { margin-left: 0; left: 4px; top: 4px; }
+.docdiff .dc:hover .addc, .docdiff .addc:focus-visible { opacity: 1; transform: none; }
+
 /* Dialog + toast */
 .overlay { position: fixed; inset: 0; background: rgba(31,35,40,.5); display: flex; align-items: flex-start; justify-content: center; padding: 10vh 16px; z-index: 50; }
 .modal { width: min(560px, 100%); background: var(--canvas); border-radius: 12px; box-shadow: var(--overlay-shadow); display: flex; flex-direction: column; max-height: 80vh; }

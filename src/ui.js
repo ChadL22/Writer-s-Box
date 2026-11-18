@@ -641,19 +641,22 @@ function renderDiffs(p, a, b, mount, opts = {}) {
   const ins = files.reduce((s, f) => s + f.ins, 0), del = files.reduce((s, f) => s + f.del, 0);
   if (!files.length) { mount.innerHTML = `<div class="Box blankslate">${ic("check")}<h3>There isn't anything to compare</h3><p class="muted">These two are identical.</p></div>`; return; }
   mount.innerHTML = `<div class="toc"><span>Showing <strong>${files.length} changed file${files.length > 1 ? "s" : ""}</strong> with <span class="add">${ins} added</span> and <span class="del">${del} removed</span> words.</span>
-      <div class="seg" role="group" aria-label="Diff layout"><button aria-pressed="${S.mode === "unified"}" data-dm="unified">Unified</button><button aria-pressed="${S.mode === "split"}" data-dm="split">Split</button></div></div>
+      <div class="seg" role="group" aria-label="Diff layout"><button aria-pressed="${S.mode === "unified"}" data-dm="unified">Unified</button><button aria-pressed="${S.mode === "split"}" data-dm="split">${ic("compare")} Side by side</button></div></div>
     ${files.map((f, i) => {
       const inA = a ? refExists(p, a, f.path) : false, inB = refExists(p, b, f.path);
       return `<div class="fdiff" id="fd-${i}"><div class="fdiff-head"><button class="btn-octicon" data-toggle="${i}" aria-label="Collapse file">${ic("chevd")}</button>
         <span class="add">+${f.ins}</span><span class="del">−${f.del}</span>${diffstatBlocks(f.ins, f.del)}${fileIcon(f.path)}<span class="fn">${esc(f.path)}</span>
         ${!inA ? `<span class="label label-success">New</span>` : !inB ? `<span class="label label-danger">Removed</span>` : ""}<span class="label">${typeLabel(f.path)}</span>
         <span class="grow"></span>${p.working[f.path] ? `<button class="btn btn-sm" data-open="${esc(f.path)}">View file</button>` : ""}</div>
-        <div class="fdiff-body" data-path="${esc(f.path)}">${diffTable(f.rows, S.mode, f.path, kindOf(f.path) === "sheet" ? [sheetRowLabels(refText(p, a, f.path)), sheetRowLabels(refText(p, b, f.path))] : null, !!opts.onComment)}</div></div>`;
+        <div class="fdiff-body" data-path="${esc(f.path)}">${S.mode === "split" && kindOf(f.path) !== "sheet"
+          ? docSplit(f.rows, f.path, [pageHead(p, a, f.path, "Before"), pageHead(p, b, f.path, "After")], !!opts.onComment)
+          : diffTable(f.rows, S.mode, f.path, kindOf(f.path) === "sheet" ? [sheetRowLabels(refText(p, a, f.path)), sheetRowLabels(refText(p, b, f.path))] : null, !!opts.onComment)}</div></div>`;
     }).join("")}`;
   mount.querySelectorAll("[data-dm]").forEach(x => x.onclick = () => { S.mode = x.dataset.dm; renderDiffs(p, a, b, mount, opts); });
   if (opts.onComment) mount.querySelectorAll("[data-cm]").forEach(x => x.onclick = () => { const body = x.closest(".fdiff-body"); opts.onComment(body.dataset.path, x.dataset.cl, x.dataset.cm); });
   mount.querySelectorAll("[data-toggle]").forEach(x => x.onclick = () => { const box = $("#fd-" + x.dataset.toggle, mount); box.classList.toggle("closed"); x.innerHTML = box.classList.contains("closed") ? ic("chevr") : ic("chevd"); });
   mount.querySelectorAll("[data-open]").forEach(x => x.onclick = () => go("file", { file: x.dataset.open }));
+  mount.querySelectorAll("[data-dexp]").forEach(x => x.onclick = () => { const h = x.closest(".dfold").nextElementSibling; if (h) h.hidden = false; x.closest(".dfold").remove(); });
   mount.querySelectorAll("[data-exp]").forEach(x => x.onclick = () => { const tb = x.closest("tbody").nextElementSibling; if (tb && tb.hasAttribute("hidden")) { tb.hidden = false; x.closest("tbody").querySelectorAll("[data-exp]").forEach(e => e.remove()); } });
 }
 function diffTable(rows, mode, file, labels, commentable) {
@@ -698,6 +701,71 @@ function diffTable(rows, mode, file, labels, commentable) {
   }
   const cols = split ? `<col style="width:52px"><col><col style="width:52px"><col>` : `<col style="width:52px"><col style="width:52px"><col style="width:20px"><col>`;
   return `<table class="diff"><colgroup>${cols}</colgroup>${html}</table>`;
+}
+
+
+/* ============ Side-by-side "pages" view for prose (Word/Docs-like) ============ */
+const unesc = s => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+const stripTags = h => (h || "").replace(/<[^>]+>/g, "");
+function pageHead(p, ref, path, side) {
+  const text = ref ? refText(p, ref, path) : "";
+  const v = ref && ref !== "W" ? p.versions[ref] : null;
+  const label = ref === "W" ? "Current text" : v ? v.message : "Not in this version";
+  const when = ref === "W" ? "unsaved changes included" : v ? shortDate(v.time) + " · " + ref.slice(0, 7) : "";
+  return { side, label, when, words: wordCount(text), exists: ref ? refExists(p, ref, path) : false };
+}
+const TEX_SRC = /^\\(documentclass|usepackage|begin|end|maketitle|title|author|date|input|include|bibliography|bibliographystyle|label|appendix|newcommand|renewcommand|setlength|tableofcontents|clearpage|newpage|centering)\b/;
+function docLine(html, file) {
+  const raw = unesc(stripTags(html)), ext = extOf(file), t = raw.trim();
+  if (!t) return { cls: "blank", html: "" };
+  let m, cls = "p", h = html;
+  if (ext === "md" || ext === "markdown") {
+    if ((m = /^(#{1,6})\s+/.exec(t))) { cls = "h" + Math.min(3, m[1].length); h = h.replace(/^(\s*)(<(?:ins|del)>)?#{1,6}\s+/, "$1$2"); }
+    else if (/^\s*[-*]\s+/.test(raw)) { cls = "li"; h = h.replace(/^(\s*)(<(?:ins|del)>)?\s*[-*]\s+/, "$1$2"); }
+    else if (/^\s*\d+\.\s+/.test(raw)) { cls = "li num"; }
+    else if (/^>\s?/.test(t)) { cls = "quote"; h = h.replace(/^(\s*)(<(?:ins|del)>)?&gt;\s?/, "$1$2"); }
+    h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>").replace(/\[([^\]]+)\]\([^)]*\)/g, '<span class="dlink">$1</span>');
+  } else if (["tex", "cls", "sty"].includes(ext)) {
+    if (/^%/.test(t) || TEX_SRC.test(t)) cls = "src";
+    else if ((m = /^\\(sub)*section\*?\{/.exec(t))) { cls = (m[0].match(/sub/g) || []).length ? "h3" : "h2"; h = h.replace(/^\s*\\(?:sub)*section\*?\{([\s\S]*)\}\s*$/, "$1"); }
+    else if (/^\\item\b/.test(t)) { cls = "li"; h = h.replace(/^(\s*)(<(?:ins|del)>)?\\item\s*/, "$1$2"); }
+    if (cls !== "src") h = h.replace(/\\textbf\{([^{}]*)\}/g, "<strong>$1</strong>").replace(/\\(?:emph|textit)\{([^{}]*)\}/g, "<em>$1</em>")
+      .replace(/\\cite[pt]?\{([^{}]*)\}/g, '<span class="dcite">[$1]</span>').replace(/---/g, "—").replace(/--/g, "–").replace(/``/g, "“").replace(/''/g, "”").replace(/\\%/g, "%").replace(/\\&amp;/g, "&amp;").replace(/~/g, " ");
+  } else if (ext === "bib") cls = "src";
+  // Source indentation means nothing on a page: drop it so wrapped lines align (keeps any leading <ins>/<del> tag).
+  if (cls !== "src") h = h.replace(/^((?:<(?:ins|del)>)?)[ \t]+/, "$1");
+  return { cls, html: h.replace(/\t/g, "    ") };
+}
+function docSplit(rows, file, heads, commentable) {
+  const docx = kindOf(file) === "docx", unit = unitName(file);
+  const cell = (side, state, html, extra = "") => {
+    if (state === "empty") return `<div class="dc ${side} empty"></div>`;
+    const d = docLine(html, file);
+    return `<div class="dc ${side} ${state} ${d.cls}">${extra}${d.cls === "li" ? '<span class="bul">•</span>' : ""}${d.html || (d.cls === "blank" ? "" : " ")}</div>`;
+  };
+  const chip = (kind, ins, del) => `<div class="dg"><span class="dchip ${kind}">${kind === "edit" ? "Edited" : kind === "add" ? "Added" : "Cut"}</span>${kind === "edit" ? `<span class="dnum"><span class="add">+${ins}</span> <span class="del">−${del}</span></span>` : ""}</div>`;
+  const countIn = (h, tag) => { let n = 0; h.replace(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "g"), (_, x) => { n += wordCount(unesc(x)); return ""; }); return n; };
+  const cb = (txt, n) => commentable ? `<button class="addc doc" data-cm="${stripTags(txt)}" data-cl="${esc(String(n || ""))}" title="Comment on this" aria-label="Comment on this">+</button>` : "";
+  // One margin label per block of consecutive changes of the same kind.
+  let prevKind = null;
+  const label = (kind, ...n) => { const same = kind === prevKind && kind !== "edit"; prevKind = kind; return same ? `<div class="dg"></div>` : chip(kind, ...n); };
+  const rowHtml = r => {
+    if (r.t === "=") { prevKind = null; return cell("L", "same", r.text) + `<div class="dg"></div>` + cell("R", "same", r.text); }
+    if (r.t === "~") return cell("L", "chg", r.L) + label("edit", countIn(r.R, "ins"), countIn(r.L, "del")) + cell("R", "chg", r.R, cb(r.R, docx ? "¶" + r.b : r.b));
+    if (r.t === "-") return cell("L", "cut", r.text, cb(r.text, docx ? "¶" + r.a : r.a)) + label("cut") + cell("R", "empty");
+    return cell("L", "empty") + label("add") + cell("R", "add", r.text, cb(r.text, docx ? "¶" + r.b : r.b));
+  };
+  const C = 2, ch = rows.map(r => r.t !== "=");
+  const near = rows.map((_, i) => { for (let j = Math.max(0, i - C); j <= Math.min(rows.length - 1, i + C); j++) if (ch[j]) return true; return false; });
+  const head = h => `<div class="dhead ${h.side}"><div class="dtitle">${ic(docx ? "fileWord" : "file")}<span>${h.side}</span></div><div class="dsub" title="${esc(h.label)}">${esc(h.label)}</div><div class="dmeta">${h.exists ? `${h.when} · ${h.words.toLocaleString()} word${h.words === 1 ? "" : "s"}` : "file not present"}</div></div>`;
+  let body = "", i = 0;
+  while (i < rows.length) {
+    if (near[i]) { body += rowHtml(rows[i++]); continue; }
+    let hid = "", n = 0, k = 0; while (i < rows.length && !near[i]) { hid += rowHtml(rows[i++]); k++; if (rows[i - 1].text && stripTags(rows[i - 1].text).trim()) n++; }
+    if (k < 3) { body += hid; continue; }
+    body += `<div class="dfold"><button data-dexp>⋯ ${n || "a few"} unchanged ${unit}${n === 1 ? "" : "s"}</button></div><div class="dhid" hidden>${hid}</div>`;
+  }
+  return `<div class="docdiff ${["md", "markdown", "tex", "cls", "sty", "bib"].includes(extOf(file)) ? "rendered" : ""}">${head(heads[0])}<div class="dg dg-head"></div>${head(heads[1])}<div class="dc L blank"></div><div class="dg"></div><div class="dc R blank"></div>${body}<div class="dfoot L"></div><div class="dg"></div><div class="dfoot R"></div></div>`;
 }
 
 /* ============ Compare ============ */
