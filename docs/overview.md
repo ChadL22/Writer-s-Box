@@ -4,26 +4,28 @@ Full spec: [Writer's Box — Product Spec & MVP Plan](https://claude.ai/artifact
 
 ## Decisions so far
 - Build order: a short spec first, then a browser prototype built to it.
-- Visual style: GitHub-style UI. Icons are themed for writing:
-  - pages for files, with one per type (Σ LaTeX, # Markdown, quotation marks BibTeX, a grid for spreadsheets)
-  - a pencil for drafts, a bookmark for milestones, a pen nib for writing, ¶ for words
+- Visual style: a GitHub-style UI with icons themed for writing:
+  - pages for files, with one per type
+  - a pencil for drafts, a bookmark for milestones, ¶ for words
   - a clock inside a counterclockwise arrow for History
-- MVP form factor: a single local-first web page. Data lives in IndexedDB; backups are `.writersbox.json` files.
-- Formats in:
-  - Google Docs: a rich paste that becomes Markdown, or a .docx/.md/.odt/.html download
-  - Word: .docx, with the original kept
-  - Excel and Google Sheets: .xlsx, .csv, .tsv, .ods or pasted cells
-  - LaTeX: an Overleaf .zip or a folder
-  - Markdown and text files
-- Formats out:
-  - the whole project as a .zip
-  - documents as .docx and spreadsheets as .xlsx
-  - a full backup
-- A version captures the whole project, like Git. This is an open question.
-- Merge: a fast-forward when main hasn't moved; otherwise the draft's text becomes the newest version on main. Three-way merge comes later.
+- Two modes:
+  - **local** (IndexedDB, no account)
+  - **GitHub** (sign in with a personal access token; each project is a repository tagged `writers-box`)
+- GitHub mapping: versions = commits, drafts = branches, milestones = tags, reviews = pull requests, notes = issues (with writing labels), sharing = collaborators and repository visibility.
+- Publishing replays the full local history into the new repository. GitHub's placeholder "Initial commit" is dropped, and its README is kept.
+- Paragraph comments in reviews are posted as quoted conversation comments, so they work for Word and Excel files too.
+- Insights:
+  - words over time (each saved version on the current draft)
+  - a calendar of versions saved per day
+  - per-file words and revisions, and contributors
+- Line history: which version last changed each line, paragraph or row.
+- Formats:
+  - in: Google Docs (rich paste or a download), Word, Excel and Google Sheets, LaTeX/Overleaf, Markdown
+  - out: .zip, .docx, .xlsx, backup
+- Open questions: one-click OAuth sign-in (needs a small token-exchange service); whether a version should be per project (current) or per file.
 
 ## Vocabulary
-Project (repository) · Version (commit) · Draft (branch) · Milestone (tag) · Compare (diff) · Restore (checkout)
+Project (repository) · Version (commit) · Draft (branch) · Milestone (tag) · Review (pull request) · Note (issue) · Compare (diff) · Line history (blame)
 
 ## Roadmap
-0 Browser MVP → 1 Folders and Git → 2 Google and Office fidelity → 3 Writer's toolbox (AI proofreading, review, citations) → 4 Collaboration
+Browser MVP ✓ → GitHub backend ✓ → OAuth sign-in → Google Drive and Office fidelity → Writer's toolbox (AI proofreading, citations) → real-time collaboration

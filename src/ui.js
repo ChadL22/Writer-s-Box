@@ -323,7 +323,7 @@ function diffstatBlocks(ins, del) {
 }
 function go(route, extra = {}) {
   Object.assign(S, extra); S.route = route;
-  const tab = { file: "files", version: "history" }[route] || route;
+  const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[route] || route;
   try { history.replaceState(null, "", "#" + tab); } catch (e) { /* ignore */ }
   render(); window.scrollTo(0, 0);
 }
@@ -331,38 +331,47 @@ function go(route, extra = {}) {
 /* ============ Shell ============ */
 function render() { renderHeader(); renderRepoHead(); renderView(); }
 function renderHeader() {
-  const p = P(), el = $("#gh");
-  el.innerHTML = `<span class="mark">${LOGO}<span>Writer's Box</span></span>
-    <span class="crumbs">/ <span>local</span> /
+  const p = P(), el = $("#gh"), atHome = S.route === "home" || S.route === "profile";
+  el.innerHTML = `<button class="mark" id="h-home" title="Home">${LOGO}<span>Writer's Box</span></button>
+    ${!atHome && p ? `<span class="crumbs">/ <span>${esc(p.remote ? p.remote.owner : "local")}</span> /
       <label class="sr" for="proj-sel">Project</label>
-      <select id="proj-sel">${S.projects.map(x => `<option value="${x.id}" ${p && x.id === p.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></span>
+      <select id="proj-sel">${S.projects.map(x => `<option value="${x.id}" ${x.id === p.id ? "selected" : ""}>${esc(x.remote ? x.remote.repo : x.name)}</option>`).join("")}</select></span>` : `<span class="crumbs"><strong>${S.route === "profile" ? "Profile" : "Home"}</strong></span>`}
     <span class="grow"></span>
-    <button class="hbtn" id="h-import">${ic("import")} Import</button>
-    <button class="hbtn" id="h-new">${ic("plus")} New project</button>`;
-  $("#proj-sel").onchange = e => { S.pid = e.target.value; resetSel(); go("files"); };
-  $("#h-import").onclick = () => go("import");
+    <button class="hbtn" id="h-new">${ic("plus")} New project</button>
+    ${ghSignedIn() ? `<button class="hbtn av-btn" id="h-me" title="Your profile and account">${avatarImg(ghImgOk() ? GH.user.avatar_url : null, GH.user.login, 22)}<span>${esc(GH.user.login)}</span></button>`
+      : `<button class="hbtn" id="h-signin">Sign in with GitHub</button>`}`;
+  $("#h-home").onclick = () => go("home");
+  const ps = $("#proj-sel"); if (ps) ps.onchange = e => { S.pid = e.target.value; resetSel(); go("files"); autoSync(); };
   $("#h-new").onclick = createProjectFlow;
+  const si = $("#h-signin"); if (si) si.onclick = signInFlow;
+  const me = $("#h-me"); if (me) me.onclick = () => modal({ title: GH.user.login, body: `<div class="Box"><button class="Box-row link" id="mm-pf" style="width:100%;color:var(--fg)">${ic("book")} Your profile</button><button class="Box-row link" id="mm-hm" style="width:100%;color:var(--fg)">${ic("manuscript")} Your projects</button><button class="Box-row link" id="mm-cl" style="width:100%;color:var(--fg)">${ic("import")} Open a project from GitHub</button><button class="Box-row link" id="mm-so" style="width:100%;color:var(--danger)">${ic("x")} Sign out</button></div><p class="muted" style="font-size:12px">Signing out removes your token from this browser. Your projects stay here and on GitHub.</p>`,
+    onOpen: ov => { const c = f => () => { ov.remove(); f(); }; $("#mm-pf", ov).onclick = c(() => go("profile")); $("#mm-hm", ov).onclick = c(() => go("home")); $("#mm-cl", ov).onclick = c(cloneFlow); $("#mm-so", ov).onclick = c(() => { ghSignOut(); toast("Signed out."); render(); }); }, actions: [{ label: "Close" }] });
 }
 function renderRepoHead() {
   const p = P(), el = $("#repohead");
-  if (!p) { el.innerHTML = ""; return; }
-  const nV = Object.keys(p.versions).length, nD = Object.keys(p.drafts).length;
-  const tab = { file: "files", version: "history" }[S.route] || S.route;
-  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""]];
-  el.innerHTML = `<div class="repotitle">${ic("book")}<span class="owner">local</span><span class="muted">/</span><strong>${esc(p.name)}</strong>
-      <span class="label">Stored on this device</span><span class="grow"></span>
-      <button class="btn btn-sm" id="r-backup">${ic("download")} Export backup</button>
-      <button class="btn btn-sm" id="r-settings">${ic("gear")} Settings</button></div>
+  if (!p || S.route === "home" || S.route === "profile") { el.innerHTML = ""; el.hidden = true; return; }
+  el.hidden = false;
+  const nV = Object.keys(p.versions).length, nD = Object.keys(p.drafts).length, remote = isRemote(p);
+  const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route;
+  const cnt = k => { const c = GH.cache[`${k}:${p.id}:open`]; return c ? c.data.length : ""; };
+  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
+  el.innerHTML = `<div class="repotitle">${ic("book")}<span class="owner">${esc(remote ? p.remote.owner : "local")}</span><span class="muted">/</span><strong>${esc(remote ? p.remote.repo : p.name)}</strong>
+      <span class="label">${remote ? (p.remote.private ? "Private" : "Public") : "Stored on this device"}</span><span class="grow"></span>
+      ${remote ? `<span class="muted" style="font-size:12px">${p.remote.syncedAt ? "Synced " + ago(p.remote.syncedAt) : "Not synced yet"}</span><button class="btn btn-sm" id="r-sync" ${ghSignedIn() ? "" : 'title="Sign in to sync"'}>${ic("undo")} Sync</button><a class="btn btn-sm" href="${esc(p.remote.htmlUrl || `https://github.com/${p.remote.owner}/${p.remote.repo}`)}" target="_blank" rel="noopener">View on GitHub</a>`
+        : `<button class="btn btn-sm" id="r-pub">${ic("import")} Publish to GitHub</button>`}</div>
     <nav class="unav" aria-label="Project">${tabs.map(([k, i, l, n]) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ""}><span class="in">${ic(i)}${l}${n !== "" ? ` <span class="counter">${n}</span>` : ""}</span></button>`).join("")}</nav>`;
   el.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
-  $("#r-backup").onclick = () => exportBackup(p);
-  $("#r-settings").onclick = projectMenu;
+  const sy = $("#r-sync"); if (sy) sy.onclick = () => syncFlow(p);
+  const pb = $("#r-pub"); if (pb) pb.onclick = () => ghSignedIn() ? publishFlow(p) : signInFlow();
 }
-function resetSel() { S.dir = ""; S.file = null; S.vid = null; S.cmp = { a: null, b: null }; S.importLog = null; }
+function resetSel() { S.dir = ""; S.file = null; S.vid = null; S.cmp = { a: null, b: null }; S.importLog = null; S.num = null; S.revTab = null; S.noteLabel = null; }
 function renderView() {
   const p = P(), el = $("#view");
+  if (S.route === "home") return viewHome(p, el);
+  if (S.route === "profile") return viewProfile(p, el);
   if (!p) { el.innerHTML = `<div class="Box blankslate">${ic("book")}<h3>No projects yet</h3><p class="muted">A project holds a paper, a book or a memo series, with every version you save.</p><button class="btn btn-primary" id="np">New project</button></div>`; $("#np").onclick = createProjectFlow; return; }
-  ({ files: viewFiles, file: viewFile, history: viewHistory, version: viewVersion, drafts: viewDrafts, compare: viewCompare, import: viewImport }[S.route] || viewFiles)(p, el);
+  ({ files: viewFiles, file: viewFile, history: viewHistory, version: viewVersion, drafts: viewDrafts, compare: viewCompare, import: viewImport,
+     reviews: viewReviews, review: viewReview, notes: viewNotes, note: viewNote, insights: viewInsights, settings: viewSettings }[S.route] || viewFiles)(p, el);
 }
 function draftPicker(p, id = "draft-sel") {
   const names = Object.keys(p.drafts).sort((a, b) => a === "main" ? -1 : b === "main" ? 1 : a.localeCompare(b));
@@ -414,7 +423,7 @@ function viewFiles(p, el) {
       </div>
       ${crumbs}
       <div class="Box">
-        <div class="Box-header">${hv ? `<div class="latest"><span class="avatar">Y</span><strong>${ME}</strong><button class="link link-muted" data-v="${head}" style="color:var(--fg)">${esc(hv.message)}</button></div><span class="grow"></span>
+        <div class="Box-header">${hv ? `<div class="latest">${avatarImg(ghImgOk() ? hv.avatar : null, hv.login || hv.author || ME, 20)}${whoOf(hv)}<button class="link link-muted" data-v="${head}" style="color:var(--fg)">${esc(hv.message)}</button></div><span class="grow"></span>
           <span class="muted sha">${head.slice(0, 7)}</span><span class="muted">·</span><span class="muted" title="${fullDate(hv.time)}">${ago(hv.time)}</span>
           <button class="btn btn-sm" data-tab="history">${ic("history")} ${Object.keys(p.versions).length} versions</button>` : `<span class="muted">No versions yet on <span class="branch-name">${esc(p.current)}</span>. Add files, then save your first version.</span>`}</div>
         ${all.length ? `<table class="ftable"><tbody>
@@ -467,12 +476,12 @@ function viewFile(p, el) {
     ${unsavedFlash(p)}
     <div class="breadcrumb"><button class="link" data-dir="">${esc(p.name)}</button>${parts.map((seg, i) => ` <span class="muted">/</span> ${i === parts.length - 1 ? `<strong>${esc(seg)}</strong>` : `<button class="link" data-dir="${esc(parts.slice(0, i + 1).join("/"))}">${esc(seg)}</button>`}`).join("")}</div>
     <div class="Box" style="margin-bottom:16px"><div class="Box-row" style="flex-wrap:wrap">
-      ${lt ? `<span class="avatar">Y</span><strong>${ME}</strong><button class="link link-muted" data-v="${lt}" style="color:var(--fg)">${esc(p.versions[lt].message)}</button><span class="grow"></span><span class="muted sha">${lt.slice(0, 7)}</span><span class="muted">· ${ago(p.versions[lt].time)}</span>` : `<span class="muted">Not in any saved version yet.</span><span class="grow"></span>`}
+      ${lt ? `${avatarImg(ghImgOk() ? p.versions[lt].avatar : null, p.versions[lt].login || ME, 20)}${whoOf(p.versions[lt])}<button class="link link-muted" data-v="${lt}" style="color:var(--fg)">${esc(p.versions[lt].message)}</button><span class="grow"></span><span class="muted sha">${lt.slice(0, 7)}</span><span class="muted">· ${ago(p.versions[lt].time)}</span>` : `<span class="muted">Not in any saved version yet.</span><span class="grow"></span>`}
       <button class="btn btn-sm" data-tab="history">${ic("history")} History</button></div></div>
     ${docx || sheet ? `<div class="flash info" id="docx-note">${ic("info")}<span>${noteFor(path, f)}</span></div>` : ""}
     <div class="Box">
       <div class="Box-header blob-head">
-        <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview">${sheet ? "As text" : "Preview"}</button></div>
+        <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview">${sheet ? "As text" : "Preview"}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="Which version last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Line history</button></div>
         <span class="muted" id="f-meta">${metaText()}</span>
         <span class="label">${typeLabel(path)}</span><span id="f-status">${statusLabel(st)}</span>
         <span class="grow"></span>
@@ -482,7 +491,7 @@ function viewFile(p, el) {
         <button class="btn-octicon" id="f-ren" title="Rename" aria-label="Rename">${ic("pencil")}</button>
         <button class="btn-octicon" id="f-rm" title="Remove file" aria-label="Remove file">${ic("trash")}</button>
       </div>
-      ${sheet && mode === "write" ? `<div id="grid-mount"></div>` : mode === "write" ? `<label class="sr" for="ed">File text</label><textarea class="editor-area" id="ed" spellcheck="${isProse(path)}">${esc(f.text)}</textarea>`
+      ${mode === "blame" ? `<div id="blame-mount"></div>` : sheet && mode === "write" ? `<div id="grid-mount"></div>` : mode === "write" ? `<label class="sr" for="ed">File text</label><textarea class="editor-area" id="ed" spellcheck="${isProse(path)}">${esc(f.text)}</textarea>`
         : `<div style="overflow-x:auto"><table class="code-view"><tbody>${lines.map((l, i) => `<tr><td class="n">${docx ? "¶" : ""}${i + 1}</td><td class="t">${(sheet ? (l.startsWith(SHEET_HDR) ? "<strong>" + esc(l) + "</strong>" : esc(l).replace(/\t/g, '<span class="csep"></span>')) : esc(l)) || " "}</td></tr>`).join("")}</tbody></table></div>`}
     </div>`;
   bindFlash(p, el);
@@ -505,6 +514,7 @@ function viewFile(p, el) {
     else if (html) { const tmp = document.createElement("div"); tmp.innerHTML = html; if (fl) fl.replaceWith(tmp.firstElementChild); else el.prepend(tmp.firstElementChild); bindFlash(p, el); }
   }
   if (sheet && mode === "write") sheetGrid(p, path, f, $("#grid-mount"), afterEdit);
+  if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-dl").onchange = async e => { const v = e.target.value; e.target.value = ""; if (v) await downloadAs(p, path, v); };
   $("#f-ren").onclick = async () => {
@@ -588,7 +598,7 @@ function viewHistory(p, el) {
         const v = p.versions[id], s = versionStat(p, id), ms = milestonesOf(p, id), heads = draftHeadsAt(p, id);
         return `<div class="vrow"><div class="vmain">
           <div class="vmsg"><button class="link" data-v="${id}">${esc(v.message)}</button>${ms.map(m => `<span class="label label-done">${ic("milestone")}${esc(m)}</span>`).join("")}${heads.map(h => `<span class="branch-name">${esc(h)}</span>`).join("")}</div>
-          <div class="vmeta"><span class="avatar">Y</span><strong>${ME}</strong> saved <span title="${fullDate(v.time)}">${ago(v.time)}</span>${v.draft !== "main" ? ` on <span class="branch-name">${esc(v.draft)}</span>` : ""}
+          <div class="vmeta">${avatarImg(ghImgOk() ? v.avatar : null, v.login || v.author || ME, 20)}${whoOf(v)} saved <span title="${fullDate(v.time)}">${ago(v.time)}</span>${v.draft !== "main" ? ` on <span class="branch-name">${esc(v.draft)}</span>` : ""}
             · ${s.files} file${s.files === 1 ? "" : "s"} · <span class="add">+${s.ins}</span> <span class="del">−${s.del}</span> words ${diffstatBlocks(s.ins, s.del)}${v.parent2 ? ` · <span class="label">${ic("merge")}merge</span>` : ""}</div></div>
           <div class="vacts"><button class="btn btn-sm sha" data-v="${id}" title="View changes">${id.slice(0, 7)}</button>
             <button class="btn btn-sm" data-restore="${id}" title="Make this the current text">${ic("undo")} Restore</button>
@@ -614,7 +624,7 @@ function viewVersion(p, el) {
   el.innerHTML = `
     <div class="vhead"><div class="title">${esc(v.message)}${ms.map(m => `<span class="label label-done">${ic("milestone")}${esc(m)}</span>`).join("")}
       <span class="grow"></span><button class="btn btn-sm" data-restore>${ic("undo")} Restore</button><button class="btn btn-sm" data-branch>${ic("branch")} New draft</button><button class="btn btn-sm" data-dl>${ic("download")} .zip</button></div>
-      <div class="foot"><span class="avatar">Y</span><strong style="color:var(--fg)">${ME}</strong> saved ${ago(v.time)} on <span class="branch-name">${esc(v.draft)}</span>
+      <div class="foot">${avatarImg(ghImgOk() ? v.avatar : null, v.login || v.author || ME, 20)}<span style="color:var(--fg)">${whoOf(v)}</span> saved ${ago(v.time)} on <span class="branch-name">${esc(v.draft)}</span>
         <span class="grow"></span>${v.parent ? `${v.parent2 ? "2 parents" : "1 parent"} <button class="link sha" data-v="${v.parent}">${v.parent.slice(0, 7)}</button>${v.parent2 ? ` + <button class="link sha" data-v="${v.parent2}">${v.parent2.slice(0, 7)}</button>` : ""}` : "first version"} · version <span class="sha" style="color:var(--fg)">${id.slice(0, 7)}</span></div></div>
     <div id="diffs"></div>`;
   el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => go("version", { vid: b.dataset.v }));
@@ -625,7 +635,7 @@ function viewVersion(p, el) {
 }
 
 /* ============ Diff rendering ============ */
-function renderDiffs(p, a, b, mount) {
+function renderDiffs(p, a, b, mount, opts = {}) {
   const paths = [...new Set([...(a ? refPaths(p, a) : []), ...refPaths(p, b)])].sort();
   const files = paths.filter(x => refText(p, a, x) !== refText(p, b, x) || refExists(p, a, x) !== refExists(p, b, x)).map(path => ({ path, ...buildRows(refText(p, a, path), refText(p, b, path)) }));
   const ins = files.reduce((s, f) => s + f.ins, 0), del = files.reduce((s, f) => s + f.del, 0);
@@ -638,20 +648,23 @@ function renderDiffs(p, a, b, mount) {
         <span class="add">+${f.ins}</span><span class="del">−${f.del}</span>${diffstatBlocks(f.ins, f.del)}${fileIcon(f.path)}<span class="fn">${esc(f.path)}</span>
         ${!inA ? `<span class="label label-success">New</span>` : !inB ? `<span class="label label-danger">Removed</span>` : ""}<span class="label">${typeLabel(f.path)}</span>
         <span class="grow"></span>${p.working[f.path] ? `<button class="btn btn-sm" data-open="${esc(f.path)}">View file</button>` : ""}</div>
-        <div class="fdiff-body">${diffTable(f.rows, S.mode, f.path, kindOf(f.path) === "sheet" ? [sheetRowLabels(refText(p, a, f.path)), sheetRowLabels(refText(p, b, f.path))] : null)}</div></div>`;
+        <div class="fdiff-body" data-path="${esc(f.path)}">${diffTable(f.rows, S.mode, f.path, kindOf(f.path) === "sheet" ? [sheetRowLabels(refText(p, a, f.path)), sheetRowLabels(refText(p, b, f.path))] : null, !!opts.onComment)}</div></div>`;
     }).join("")}`;
-  mount.querySelectorAll("[data-dm]").forEach(x => x.onclick = () => { S.mode = x.dataset.dm; renderDiffs(p, a, b, mount); });
+  mount.querySelectorAll("[data-dm]").forEach(x => x.onclick = () => { S.mode = x.dataset.dm; renderDiffs(p, a, b, mount, opts); });
+  if (opts.onComment) mount.querySelectorAll("[data-cm]").forEach(x => x.onclick = () => { const body = x.closest(".fdiff-body"); opts.onComment(body.dataset.path, x.dataset.cl, x.dataset.cm); });
   mount.querySelectorAll("[data-toggle]").forEach(x => x.onclick = () => { const box = $("#fd-" + x.dataset.toggle, mount); box.classList.toggle("closed"); x.innerHTML = box.classList.contains("closed") ? ic("chevr") : ic("chevd"); });
   mount.querySelectorAll("[data-open]").forEach(x => x.onclick = () => go("file", { file: x.dataset.open }));
   mount.querySelectorAll("[data-exp]").forEach(x => x.onclick = () => { const tb = x.closest("tbody").nextElementSibling; if (tb && tb.hasAttribute("hidden")) { tb.hidden = false; x.closest("tbody").querySelectorAll("[data-exp]").forEach(e => e.remove()); } });
 }
-function diffTable(rows, mode, file, labels) {
+function diffTable(rows, mode, file, labels, commentable) {
   const docx = kindOf(file) === "docx", sheet = kindOf(file) === "sheet", unit = unitName(file);
   let side = 0;
   const lnA = n => n ? (labels ? labels[0][n - 1] : docx ? "¶" + n : n) : "", lnB = n => n ? (labels ? labels[1][n - 1] : docx ? "¶" + n : n) : "";
   const fmt = h => !sheet ? h : h.startsWith(esc(SHEET_HDR)) ? `<strong>${ic("fileSheet")} ${h.slice(esc(SHEET_HDR).length)}</strong>` : h.replace(/\t/g, '<span class="csep"></span>');
   const split = mode === "split";
-  const rowHtml = r => {
+  const plain = h => (h || "").replace(/<[^>]+>/g, "");
+  const cbtn = (r, html, n) => commentable ? `<button class="addc" data-cm="${plain(html)}" data-cl="${esc(String(n || ""))}" title="Comment on this" aria-label="Comment on this">+</button>` : "";
+  const rowHtml0 = r => {
     if (split) {
       if (r.t === "=") return `<tr><td class="ln">${lnA(r.a)}</td><td>${fmt(r.text) || " "}</td><td class="ln">${lnB(r.b)}</td><td>${fmt(r.text) || " "}</td></tr>`;
       if (r.t === "~") return `<tr><td class="ln n-del">${lnA(r.a)}</td><td class="c-del">${fmt(r.L) || " "}</td><td class="ln n-ins">${lnB(r.b)}</td><td class="c-ins">${fmt(r.R) || " "}</td></tr>`;
@@ -662,6 +675,12 @@ function diffTable(rows, mode, file, labels) {
     if (r.t === "~") return `<tr class="rdel"><td class="ln">${lnA(r.a)}</td><td class="ln"></td><td class="mk">-</td><td>${fmt(r.L) || " "}</td></tr><tr class="rins"><td class="ln"></td><td class="ln">${lnB(r.b)}</td><td class="mk">+</td><td>${fmt(r.R) || " "}</td></tr>`;
     if (r.t === "-") return `<tr class="rdel"><td class="ln">${lnA(r.a)}</td><td class="ln"></td><td class="mk">-</td><td>${fmt(r.text) || " "}</td></tr>`;
     return `<tr class="rins"><td class="ln"></td><td class="ln">${lnB(r.b)}</td><td class="mk">+</td><td>${fmt(r.text) || " "}</td></tr>`;
+  };
+  const rowHtml = r => {
+    let h = rowHtml0(r);
+    if (!commentable || r.t === "=") return h;
+    const txt = r.t === "~" ? r.R : r.text, n = r.t === "-" ? lnA(r.a) : lnB(r.b);
+    return h.replace(/<td(?: class="(c-ins|c-del)")?>(?![\s\S]*<td)/, m => m + cbtn(r, txt, n));
   };
   const C = 3, ch = rows.map(r => r.t !== "=");
   const near = rows.map((_, i) => { for (let j = Math.max(0, i - C); j <= Math.min(rows.length - 1, i + C); j++) if (ch[j]) return true; return false; });
@@ -723,7 +742,7 @@ function viewDrafts(p, el) {
       ${n === p.current ? `<span class="label label-accent">Current</span>` : ""}${isMain ? `<span class="label">Default</span>` : ""}<span class="grow"></span>
       ${ab ? `<span class="aheadbehind" title="${ab.behind} behind, ${ab.ahead} ahead of main"><span class="b">${ab.behind}<div class="bar" style="width:${Math.round(56 * ab.behind / maxAB)}px"></div></span><span class="a">${ab.ahead}<div class="bar" style="width:${Math.round(56 * ab.ahead / maxAB)}px"></div></span></span>` : ""}
       ${n !== p.current ? `<button class="btn btn-sm" data-switch="${esc(n)}">Switch to</button>` : ""}
-      ${ab && ab.ahead ? `<button class="btn btn-sm" data-cmp="${esc(n)}">Compare</button><button class="btn btn-sm btn-primary" data-merge="${esc(n)}">${ic("merge")} Merge into main</button>` : ""}
+      ${ab && ab.ahead ? `<button class="btn btn-sm" data-cmp="${esc(n)}">Compare</button>${isRemote(p) ? `<button class="btn btn-sm btn-primary" data-rev="${esc(n)}">${ic("merge")} Request review</button><button class="btn btn-sm" data-merge="${esc(n)}">Merge now</button>` : `<button class="btn btn-sm btn-primary" data-merge="${esc(n)}">${ic("merge")} Merge into main</button>`}` : ""}
       ${!isMain ? `<button class="btn-octicon" data-del="${esc(n)}" title="Delete draft" aria-label="Delete draft ${esc(n)}">${ic("trash")}</button>` : ""}</div>`;
   };
   const ms = Object.entries(p.milestones).filter(([, v]) => p.versions[v]).sort((a, b) => p.versions[b[1]].time - p.versions[a[1]].time);
@@ -739,6 +758,7 @@ function viewDrafts(p, el) {
   $("#d-new").onclick = () => newDraftFlow(headId(p));
   el.querySelectorAll("[data-switch]").forEach(b => b.onclick = () => switchDraft(b.dataset.switch));
   el.querySelectorAll("[data-merge]").forEach(b => b.onclick = () => mergeFlow(b.dataset.merge));
+  el.querySelectorAll("[data-rev]").forEach(b => b.onclick = () => requestReviewFlow(p, b.dataset.rev));
   el.querySelectorAll("[data-cmp]").forEach(b => b.onclick = () => go("compare", { cmp: { a: p.drafts.main, b: p.drafts[b.dataset.cmp] } }));
   el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => deleteDraftFlow(b.dataset.del));
   el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => go("version", { vid: b.dataset.v }));
@@ -992,6 +1012,13 @@ async function saveFlow() {
     actions: [{ label: "Cancel", value: null }, { label: "Save version", primary: true, onClick: ov => $("#sv-msg", ov).value.trim() || "Untitled version" }]
   });
   if (!msg) return;
+  if (isRemote(p)) {
+    if (!ghSignedIn()) return toast("Sign in with GitHub to save versions to this project.");
+    const pm = progressModal("Saving to GitHub"); pm.set("Uploading changed files…");
+    try { await saveVersionRemote(p, msg); pm.close(); await persist(p, true); toast("Version saved to GitHub."); render(); }
+    catch (e) { pm.close(); toast(e.message); }
+    return;
+  }
   await saveVersion(p, msg); await persist(p, true); toast("Version saved."); render();
 }
 async function restoreFlow(id) {
@@ -1004,6 +1031,12 @@ async function milestoneFlow(id) {
   const p = P(), cur = milestonesOf(p, id)[0] || "";
   const name = await askText(cur ? "Edit milestone" : "Add milestone", "Milestone name", cur, "Save", "For example: Sent to reviewers, Submitted, Published. Clear it and save to remove.");
   if (name === null) return;
+  if (isRemote(p)) {
+    if (!ghSignedIn()) return toast("Sign in with GitHub to change milestones.");
+    try { if (cur) await deleteTagRemote(p, cur); if (name) { const t = tagName(name); await createTagRemote(p, t, id); p.milestones[t] = id; } if (cur) delete p.milestones[cur]; }
+    catch (e) { return toast(e.message); }
+    persist(p, true); return render();
+  }
   if (cur) delete p.milestones[cur];
   if (name) p.milestones[name] = id;
   persist(p, true); render();
@@ -1022,7 +1055,8 @@ async function createProjectFlow() {
   if (!name) return;
   const p = newProject(name); S.projects.push(p); S.pid = p.id; resetSel(); await persist(p, true); go("import");
 }
-async function projectMenu() {
+async function projectMenu() { return go("settings"); }
+async function projectMenuOld() {
   const p = P();
   await modal({
     title: "Settings",
@@ -1067,6 +1101,10 @@ async function newDraftFlow(fromId) {
   if (p.drafts[key] !== undefined) return toast("A draft with that name already exists.");
   const keepWorking = fromId === headId(p);
   if (!keepWorking && !await guardUnsaved(p, "Starting a draft from an older version")) return;
+  if (isRemote(p)) {
+    if (!ghSignedIn()) return toast("Sign in with GitHub to create drafts in this project.");
+    try { await createBranchRemote(p, key, fromId); } catch (e) { return toast(e.message); }
+  }
   p.drafts[key] = fromId; p.current = key;
   if (!keepWorking) loadWorking(p, fromId);
   persist(p, true); go("files");
@@ -1076,6 +1114,16 @@ async function mergeFlow(name) {
   const p = P(), dHead = p.drafts[name], mHead = p.drafts.main;
   if (changedPaths(p).length) return toast("Save or discard your unsaved changes before merging.");
   if (!dHead || dHead === mHead || ancestors(p, mHead).has(dHead)) return toast("main already includes everything in this draft.");
+  if (isRemote(p)) {
+    if (!ghSignedIn()) return toast("Sign in with GitHub to merge.");
+    if (!mHead || ancestors(p, dHead).has(mHead)) {
+      if (!await confirmBox(`Merge ${name} into main now?`, "main hasn't changed since this draft started, so main moves forward to include the draft's versions. To get feedback first, use Request review instead.", "Merge into main")) return;
+      try { await fastForwardRemote(p, "main", dHead); p.drafts.main = dHead; } catch (e) { return toast(e.message); }
+      p.current = "main"; loadWorking(p, p.drafts.main); p.remote.syncedHead = p.drafts.main; await persist(p, true); go("files"); return toast(`Merged ${name} into main.`);
+    }
+    if (await confirmBox("main has moved on", `main has new versions that “${esc(name)}” doesn't. Open a review: GitHub merges both sets of edits when they don't touch the same lines, and flags it when they do.`, "Request review")) requestReviewFlow(p, name);
+    return;
+  }
   if (!mHead || ancestors(p, dHead).has(mHead)) {
     if (!await confirmBox(`Merge ${name} into main?`, "main hasn't changed since this draft started, so main moves forward to include the draft's versions.", "Merge into main")) return;
     p.drafts.main = dHead;
@@ -1094,6 +1142,10 @@ async function deleteDraftFlow(name) {
   if (p.current === name) {
     if (!await guardUnsaved(p, "Deleting the draft you're on")) return;
     p.current = "main"; loadWorking(p, p.drafts.main);
+  }
+  if (isRemote(p)) {
+    if (!ghSignedIn()) return toast("Sign in with GitHub to delete drafts.");
+    try { await deleteBranchRemote(p, name); } catch (e) { return toast(e.message); }
   }
   delete p.drafts[name]; persist(p, true); render();
 }
@@ -1166,19 +1218,3 @@ The questionnaire recorded the cancellation channel, the number of steps, and an
   return { p, v1, v2 };
 }
 
-/* ============ Boot ============ */
-(async function boot() {
-  await dbOpen();
-  let list = [];
-  try { list = (await dbAll()) || []; } catch (e) { list = []; }
-  S.projects = list.sort((a, b) => a.created - b.created);
-  if (!S.projects.length) { const { p } = await seedProject(); S.projects.push(p); persist(p, true); }
-  S.pid = S.projects[0].id; resetSel();
-  const h = location.hash.slice(1);
-  if (["files", "history", "drafts", "compare", "import"].includes(h)) S.route = h;
-  render();
-  window.addEventListener("hashchange", () => { const v = location.hash.slice(1); const tab = { file: "files", version: "history" }[S.route] || S.route; if (["files", "history", "drafts", "compare", "import"].includes(v) && v !== tab) { S.route = v; render(); } });
-})();
-</script>
-</body>
-</html>
