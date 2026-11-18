@@ -332,18 +332,20 @@ function diffstatBlocks(ins, del) {
 const NAV_KEYS = ["route", "pid", "file", "dir", "vid", "cmp", "num", "fileMode"];
 const navState = () => Object.fromEntries(NAV_KEYS.map(k => [k, S[k] === undefined ? null : JSON.parse(JSON.stringify(S[k]))]));
 const navHash = () => "#" + ({ file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route);
+const NAV_LAST = "wb.last";
+function rememberNav() { try { localStorage.setItem(NAV_LAST, JSON.stringify({ pid: S.pid })); } catch (e) { /* ignore */ } }
 function go(route, extra = {}, replace = false) {
   const before = JSON.stringify(navState());
   Object.assign(S, extra); S.route = route;
   const st = navState();
   try { if (replace || JSON.stringify(st) === before) history.replaceState(st, "", navHash()); else history.pushState(st, "", navHash()); } catch (e) { /* ignore */ }
-  render(); if (!replace) window.scrollTo(0, 0);
+  rememberNav(); render(); if (!replace) window.scrollTo(0, 0);
 }
 function onNavPop(e) {
   const st = e.state; if (!st || !st.route) return;
   document.querySelectorAll("#layer .overlay").forEach(o => { const x = o.querySelector("[data-x]"); if (x) x.click(); else o.remove(); });
   if (st.pid && !S.projects.some(x => x.id === st.pid)) return;
-  Object.assign(S, st); render();
+  Object.assign(S, st); rememberNav(); render();
 }
 
 /* ============ Shell ============ */
