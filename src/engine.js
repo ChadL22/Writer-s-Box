@@ -331,7 +331,9 @@ async function offerFile(filename, data, textFallback) {
     const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   } catch (e) { /* ignore */ }
-  if (textFallback != null && !downloadsCap) {
+  // Outside the Claude viewer (e.g. GitHub Pages) the browser download above works, so no copy box is needed.
+  const inClaude = !!(window.claude && window.claude.use);
+  if (textFallback != null && !downloadsCap && inClaude) {
     modal({ title: "Copy " + filename, body: `<p class="muted">Downloads aren't available in this view. Copy the text instead.</p><textarea class="copybox" readonly>${esc(textFallback)}</textarea>`,
       actions: [{ label: "Copy", primary: true, keep: true, onClick: async () => { try { await navigator.clipboard.writeText(textFallback); toast("Copied"); } catch (e) { toast("Select the text and copy it with your keyboard."); } } }, { label: "Close" }] });
   }
