@@ -40,6 +40,19 @@ Share any file to **Google Docs / Sheets** (all file types) or **Word / Excel fo
 
 One-time setup: a free Google client ID and/or Microsoft app registration, in `src/config.js` or in Settings › Connections. See **`docs/live-collaboration-setup.md`**.
 
+## References
+
+The **References** tab manages your bibliography. References live in a BibTeX file in the project (`references.bib` by default, or any `.bib` you already have), so they're versioned, compared, reviewed and synced like everything else, and LaTeX uses them directly.
+
+- **View and find:** search, filter by type or by cited / not cited, sort, and open any reference to see it formatted (APA 7, Chicago author-date or MLA 9), its fields, and every place it's cited.
+- **Citation check:** citations in your `.tex` (`\cite`, `\citep`, `\citet`, …) and Markdown (`[@key]`) that aren't in your library are flagged, with a one-click add.
+- **Add and edit:** a form whose fields follow the reference type, with a live formatted preview. Fill it in from a DOI. Editing one reference rewrites only that entry; the rest of your `.bib` file is left exactly as it was.
+- **Import:** `.bib`, `.ris` and CSL-JSON files (Zotero, Mendeley, EndNote, Paperpile), pasted text, or a list of DOIs. Duplicates are skipped by DOI or title and year.
+- **Export:** BibTeX, RIS, CSL-JSON, or a formatted bibliography as Word, Markdown or copied text, for all references or only the cited ones.
+- **Cite while writing:** the **Cite** button in the editor inserts `\cite{key}` in LaTeX, `[@key]` in Markdown, or an in-text citation like (Smith et al., 2020) elsewhere.
+
+DOI lookup uses doi.org, so it works on the hosted site but not inside Claude's preview.
+
 ## How Writer's Box maps onto GitHub
 
 | Writer's Box | GitHub |
@@ -68,11 +81,13 @@ writers-box/
 │   ├── config.js       ← site settings: Google / Microsoft client IDs for live collaboration
 │   ├── collab.js       ← home, profile, reviews, notes, insights, line history, settings
 │   ├── live.js         ← live collaboration via Google Drive and OneDrive (share, status, bring back, comments)
+│   ├── refs.js         ← references: BibTeX/RIS/CSL-JSON, DOI lookup, APA/Chicago/MLA, citation check, References tab
 │   └── main.js         ← boot and routing
 ├── tests/
 │   ├── test_app.py     ← local-mode browser tests (15 checks)
 │   ├── test_github.py  ← GitHub-mode tests against a mock GitHub API (26 checks)
 │   ├── mock_github.js  ← in-memory stand-in for the GitHub REST API
+│   ├── test_refs.py    ← references tests: BibTeX engine, import/export, citing (45 checks)
 │   ├── test_live.py    ← live-collaboration tests against mock Google and Microsoft APIs (17 checks)
 │   ├── mock_live.js    ← in-memory stand-ins for Google Drive/sign-in and Microsoft Graph/sign-in
 │   └── screenshots/    ← written by the tests (git-ignored)
@@ -88,7 +103,7 @@ Edit files in `src/`, then run `./build.sh` (in VS Code's terminal, Ctrl+`) to r
 ```bash
 pip install playwright openpyxl
 python -m playwright install chromium
-./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py
+./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py
 ```
 
 The GitHub tests run every flow against `tests/mock_github.js`, so they need no account or network:

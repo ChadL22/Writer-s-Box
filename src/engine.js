@@ -35,7 +35,7 @@ const typeLabel = n => TYPE[extOf(n)] || "Text";
 const TEXT_EXT = ["tex", "bib", "cls", "sty", "bst", "bbx", "cbx", "md", "markdown", "txt"];
 const isProse = n => ["docx", "md", "markdown", "txt"].includes(extOf(n));
 const unitName = n => kindOf(n) === "docx" ? "paragraph" : kindOf(n) === "sheet" ? "row" : "line";
-const ACCEPT = ".tex,.bib,.cls,.sty,.bst,.md,.markdown,.txt,.docx,.odt,.html,.htm,.zip,.xlsx,.csv,.tsv,.ods";
+const ACCEPT = ".tex,.bib,.ris,.cls,.sty,.bst,.md,.markdown,.txt,.docx,.odt,.html,.htm,.zip,.xlsx,.csv,.tsv,.ods";
 
 /* ============ Zip (read with DecompressionStream, write uncompressed) ============ */
 const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();

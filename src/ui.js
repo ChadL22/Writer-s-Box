@@ -29,6 +29,7 @@ const P_ = {
   merge: '<path d="M2 1.75h4v5H2zM10 1.75h4v5h-4z"/><path d="M4 6.75v1c0 1 .75 1.75 1.75 1.75h4.5c1 0 1.75-.75 1.75-1.75v-1M8 9.5v4.75M6.5 12.75 8 14.25l1.5-1.5"/>',
   /* write = a pen nib */
   pencil: '<path d="M8 14.25 4.25 8.5 6 3.25h4l1.75 5.25z"/><path d="M8 14.25V9.5"/><circle cx="8" cy="8.25" r=".9"/><path d="M5.75 1.5h4.5"/>',
+  quote: '<path d="M2.75 8.5h3.5v4.25H2.75zM2.75 8.5c0-2.6 1-4.4 3.25-5.25M9.75 8.5h3.5v4.25h-3.5zM9.75 8.5c0-2.6 1-4.4 3.25-5.25"/>',
   pilcrow: '<path d="M7.5 2.25v11.5M10.25 2.25v11.5M12 2.25H6.5a2.75 2.75 0 0 0 0 5.5h1"/>',
   x: '<path d="M4 4l8 8M12 4l-8 8"/>',
   plus: '<path d="M8 3v10M3 8h10"/>',
@@ -355,7 +356,7 @@ function renderRepoHead() {
   const nV = Object.keys(p.versions).length, nD = Object.keys(p.drafts).length, remote = isRemote(p);
   const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route;
   const cnt = k => { const c = GH.cache[`${k}:${p.id}:open`]; return c ? c.data.length : ""; };
-  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["live", "people", "Live", Object.keys(p.live || {}).length || ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
+  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["refs", "quote", "References", refCount(p) || ""], ["live", "people", "Live", Object.keys(p.live || {}).length || ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
   el.innerHTML = `<div class="repotitle">${ic("book")}<span class="owner">${esc(remote ? p.remote.owner : "local")}</span><span class="muted">/</span><strong>${esc(remote ? p.remote.repo : p.name)}</strong>
       <span class="label">${remote ? (p.remote.private ? "Private" : "Public") : "Stored on this device"}</span><span class="grow"></span>
       ${remote ? `<span class="muted" style="font-size:12px">${p.remote.syncedAt ? "Synced " + ago(p.remote.syncedAt) : "Not synced yet"}</span><button class="btn btn-sm" id="r-sync" ${ghSignedIn() ? "" : 'title="Sign in to sync"'}>${ic("undo")} Sync</button><a class="btn btn-sm" href="${esc(p.remote.htmlUrl || `https://github.com/${p.remote.owner}/${p.remote.repo}`)}" target="_blank" rel="noopener">View on GitHub</a>`
@@ -372,7 +373,7 @@ function renderView() {
   if (S.route === "profile") return viewProfile(p, el);
   if (!p) { el.innerHTML = `<div class="Box blankslate">${ic("book")}<h3>No projects yet</h3><p class="muted">A project holds a paper, a book or a memo series, with every version you save.</p><button class="btn btn-primary" id="np">New project</button></div>`; $("#np").onclick = createProjectFlow; return; }
   ({ files: viewFiles, file: viewFile, history: viewHistory, version: viewVersion, drafts: viewDrafts, compare: viewCompare, import: viewImport,
-     reviews: viewReviews, review: viewReview, live: viewLive, notes: viewNotes, note: viewNote, insights: viewInsights, settings: viewSettings }[S.route] || viewFiles)(p, el);
+     reviews: viewReviews, review: viewReview, live: viewLive, refs: viewRefs, notes: viewNotes, note: viewNote, insights: viewInsights, settings: viewSettings }[S.route] || viewFiles)(p, el);
 }
 function draftPicker(p, id = "draft-sel") {
   const names = Object.keys(p.drafts).sort((a, b) => a === "main" ? -1 : b === "main" ? 1 : a.localeCompare(b));
@@ -487,6 +488,7 @@ function viewFile(p, el) {
         <span class="muted" id="f-meta">${metaText()}</span>
         <span class="label">${typeLabel(path)}</span><span id="f-status">${statusLabel(st)}</span>
         <span class="grow"></span>
+        ${mode === "write" && !sheet ? `<button class="btn btn-sm" id="f-cite" title="Insert a citation at the cursor">${ic("quote")} Cite</button>` : ""}
         <button class="btn btn-sm" id="f-live">${ic("people")} ${liveOf(p, path) ? "Live" : "Collaborate live"}</button>
         <button class="btn btn-sm" id="f-cmp">${ic("compare")} Changes</button>
         <label class="sr" for="f-dl">Download</label>
@@ -520,6 +522,8 @@ function viewFile(p, el) {
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-live").onclick = () => shareLiveFlow(p, path);
+  const ct = $("#f-cite"); if (ct) ct.onclick = () => citeFlow(p, path, $("#ed"));
+  if (ta && S.citeCaret != null) { ta.focus(); ta.setSelectionRange(S.citeCaret, S.citeCaret); S.citeCaret = null; }
   const lb = el.querySelector("[data-lback]"); if (lb) lb.onclick = () => bringBackFlow(p, path);
   if (liveOf(p, path) && !liveBlocked()) liveStatus(p, path).then(() => { const s = el.querySelector("[data-lst]"); if (s) s.innerHTML = liveStateHtml(liveOf(p, path)); }).catch(() => {});
   $("#f-dl").onchange = async e => { const v = e.target.value; e.target.value = ""; if (v) await downloadAs(p, path, v); };
@@ -856,7 +860,7 @@ function viewImport(p, el) {
         <label class="check"><input type="checkbox" id="imp-save" ${S.importSave !== false ? "checked" : ""}> Save a version right after importing</label>
       </div>
       <div style="padding:0 16px 16px"><div class="dropzone" id="drop">${ic("import")}<strong>Drag files, a folder or a .zip here</strong>
-        <span class="muted">.docx · .odt · .xlsx · .csv · .ods · .md · .txt · .html · .tex · .bib · Overleaf .zip</span>
+        <span class="muted">.docx · .odt · .xlsx · .csv · .ods · .md · .txt · .html · .tex · .bib · .ris · Overleaf .zip</span>
         <div class="row"><label class="btn btn-sm" for="in-files">Choose files</label><label class="btn btn-sm" for="in-folder">Choose a folder</label></div>
         <input type="file" id="in-files" multiple accept="${ACCEPT}" hidden><input type="file" id="in-folder" webkitdirectory multiple hidden></div></div>
     </div>
@@ -882,6 +886,11 @@ function viewImport(p, el) {
         "<strong>From your computer:</strong> choose the project folder.",
         "Text files are versioned line by line. Figures and PDFs are listed as skipped for now."
       ], `<label class="btn btn-sm" for="in-files">Choose .zip or files</label><label class="btn btn-sm" for="in-folder">Choose folder</label>`)}
+      ${src("#8250df", ic("quote"), "References", [".bib", ".ris", ".json", "DOI"], [
+        "<strong>Zotero:</strong> File › Export Library › BibTeX or RIS. <strong>Mendeley:</strong> File › Export › BibTeX. <strong>EndNote:</strong> File › Export › RIS.",
+        "References are kept in a .bib file, so they're versioned with your writing and work directly with LaTeX and Pandoc.",
+        "Look references up by DOI, edit them, and export BibTeX, RIS, CSL-JSON or a formatted APA, Chicago or MLA list from the References tab."
+      ], `<button class="btn btn-sm btn-primary" id="imp-refs">${ic("quote")} Import references</button><button class="btn btn-sm" data-tab="refs">Open References</button>`)}
       ${src("#083fa1", ic("fileMd"), "Markdown & text", [".md", ".txt", ".html"], [
         "Choose .md or .txt files from Obsidian, iA Writer, Ulysses exports and the like.",
         "Web pages (.html) are converted to Markdown.",
@@ -895,6 +904,7 @@ function viewImport(p, el) {
       <div class="Box-row">${ic("history")}<span class="grow">Full backup with every version, draft and milestone <span class="muted">(.json)</span></span><button class="btn btn-sm" id="ex-backup">Download</button></div>
     </div>`;
   el.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
+  $("#imp-refs").onclick = () => importRefsFlow(p, render);
   $("#imp-dir").oninput = e => S.importDir = e.target.value;
   $("#imp-save").onchange = e => S.importSave = e.target.checked;
   $("#in-files").onchange = e => runImport(p, [...e.target.files].map(f => ({ file: f, path: f.name })));
@@ -949,6 +959,7 @@ async function importBytes(p, path, u8, log) {
     if (ext === "csv" || ext === "tsv") { const raw = dec.decode(u8).replace(/^\uFEFF/, ""); const rows = parseDelimited(raw, ext === "csv" ? "," : "\t"); const name = path.split("/").pop().replace(/\.[^.]+$/, ""); const text = sheetsToText([{ name, rows }]); return put(path, { text, orig: b64.from(u8) }, sheetSummary(text)); }
     if (ext === "odt") { const q = path.replace(/\.odt$/i, ".md"); return put(q, { text: await odtToMarkdown(u8), orig: null }, "OpenDocument converted to Markdown", "converted"); }
     if (ext === "html" || ext === "htm") { const q = path.replace(/\.html?$/i, ".md"); return put(q, { text: htmlToMarkdown(dec.decode(u8)), orig: null }, "Web page converted to Markdown", "converted"); }
+    if (ext === "ris") { const q = path.replace(/\.ris$/i, ".bib"), items = risToFields(dec.decode(u8)), taken = new Set(); const text = items.map(it => entryToBib({ type: it.type, key: it.key && !taken.has(it.key) ? (taken.add(it.key), it.key) : (k => (taken.add(k), k))(makeKey(it.fields, taken)), fields: it.fields })).join("\n\n") + "\n"; return put(q, { text, orig: null }, `${items.length} reference${items.length === 1 ? "" : "s"} converted from RIS to BibTeX`, "converted"); }
     if (TEXT_EXT.includes(ext)) { const text = dec.decode(u8).replace(/^﻿/, "").replace(/\r\n?/g, "\n"); return put(path, { text, orig: null }, `${text.split("\n").length} line${text.includes("\n") ? "s" : ""}`); }
     log.push({ path, status: "skipped", note: SKIP_NOTE[ext] || "This file type isn't supported yet" });
   } catch (err) { log.push({ path, status: "skipped", note: err.message }); }

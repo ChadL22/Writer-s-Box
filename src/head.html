@@ -481,6 +481,32 @@ ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column;
 .toast { position: fixed; bottom: 24px; left: 24px; background: var(--fg); color: var(--canvas); padding: 10px 16px; border-radius: 6px; font-size: 14px; z-index: 60; box-shadow: var(--overlay-shadow); max-width: 90vw; }
 @media (max-width: 600px) { .container, .repohead, .gh { padding-left: 16px; padding-right: 16px; } .ftable td.msg, .ftable td.when { display: none; } .ftable td.nm { width: auto; } }
 @media (prefers-reduced-motion: no-preference) { .btn, .Box-row, .ftable td { transition: background-color .08s; } }
+/* References */
+.rf-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rf-bar input[type=text] { flex: 1 1 220px; min-width: 160px; height: 28px; }
+.rf-row { align-items: flex-start; gap: 8px; }
+.rf-row .label, .rf-row .rf-key { flex-shrink: 0; margin-top: 2px; }
+.rf-title { font-weight: 600; font-size: 14px; text-align: left; color: var(--fg); line-height: 1.4; }
+.rf-title:hover { color: var(--accent); }
+.rf-meta { font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-key { font-family: var(--mono); font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-row.open { background: var(--canvas-subtle); }
+.rf-detail { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.rf-formatted, .rf-biblio p { font-family: Georgia, "Times New Roman", serif; font-size: 15px; line-height: 1.6; padding-left: 2em; text-indent: -2em; margin: 0; }
+.rf-formatted { background: var(--canvas); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px 12px calc(16px + 2em); }
+.rf-biblio { background: var(--canvas); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow: auto; }
+.rf-intext { font-size: 12px; }
+.rf-fields { border-collapse: collapse; font-size: 12px; width: 100%; }
+.rf-fields th { text-align: left; font-family: var(--mono); font-weight: 500; color: var(--muted); padding: 3px 12px 3px 0; vertical-align: top; width: 1%; white-space: nowrap; }
+.rf-fields td { padding: 3px 0; word-break: break-word; }
+.rf-uses { font-size: 12px; }
+.rf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 12px; }
+.mbody details > summary { cursor: pointer; font-weight: 600; font-size: 13px; margin: 8px 0; }
+.ex-wrap { flex-wrap: wrap; } .ex-wrap > .grow { flex-basis: 100%; }
+.rf-grid > label { margin-bottom: 8px; }
+.ct-list { max-height: 320px; overflow: auto; margin-top: 8px; }
+.ct-list .Box-row { cursor: pointer; align-items: flex-start; }
+.ct-list .Box-row[hidden] { display: none; }
 </style>
 </head>
 <body>
