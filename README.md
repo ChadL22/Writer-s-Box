@@ -76,6 +76,15 @@ The **Format** tab turns a document into a correctly formatted paper without cha
 
 Connect OpenRouter in **Settings › Connections** (one-click sign-in on the hosted site, or paste a key). It's used only when you ask: reading style guides from sites that block other sites (like the Purdue OWL) or from PDFs, and describing each section's purpose when copying a structure. The key stays in your browser; text goes to OpenRouter and the model you choose. AI features don't work inside Claude's preview.
 
+## Word and character counts
+
+- **Live counter** under the editor: words, characters and reading time, plus a count of any selected text. Sectioned documents count every section.
+- **Counts what a reader sees:** LaTeX commands, Markdown symbols, comments and front matter are left out; citations count as they print (for example "(Smith, 2020)"); an emoji is one character; Chinese, Japanese and Korean characters each count as a word.
+- **Counts & limits** shows sentences, paragraphs, characters without spaces, reading and speaking time, estimated pages, and a count per section. Choose what counts: body, title and headings, abstract, quotations, lists, footnotes, citations, reference list (off by default).
+- **Limits:** a minimum, a maximum or both, in words or characters, on the counted text or the abstract only, for any document or section. Presets: Common App essay (250–650 words), APA abstract (250 words), X (280 characters), Bluesky (300), Threads (500), LinkedIn (3,000).
+- Limits show as progress bars in the editor and sections panel, as **Over limit** / **Under minimum** labels in the file list, as a warning when saving (saving isn't blocked), and in the Format checklist.
+- Word files are counted paragraph by paragraph; their headings count as body text for now.
+
 ## How Writer's Box maps onto GitHub
 
 | Writer's Box | GitHub |
@@ -107,6 +116,7 @@ writers-box/
 │   ├── refs.js         ← references: BibTeX/RIS/CSL-JSON, DOI lookup, APA/Chicago/MLA, citation check, References tab
 │   ├── llm.js          ← optional AI through OpenRouter (sign-in, chat, PDF and web reading)
 │   ├── format.js       ← formatting styles, Word export, LaTeX preamble, checklist, style import, structure copy
+│   ├── counts.js       ← word and character counts, what counts, limits, live counter
 │   ├── sections.js     ← splitting documents into section files, sections panel, assembling
 │   └── main.js         ← boot and routing
 ├── tests/
@@ -115,6 +125,7 @@ writers-box/
 │   ├── mock_github.js  ← in-memory stand-in for the GitHub REST API
 │   ├── test_refs.py    ← references tests: BibTeX engine, import/export, citing (45 checks)
 │   ├── test_format.py  ← styles, Word output (python-docx + LibreOffice), LaTeX, style import, structure, OpenRouter (63 checks)
+│   ├── test_counts.py  ← counting rules, selection counts, limits and warnings (27 checks)
 │   ├── test_sections.py ← sections and Back/Forward navigation (32 checks)
 │   ├── test_live.py    ← live-collaboration tests against mock Google and Microsoft APIs (17 checks)
 │   ├── mock_live.js    ← in-memory stand-ins for Google Drive/sign-in and Microsoft Graph/sign-in
@@ -131,7 +142,7 @@ Edit files in `src/`, then run `./build.sh` (in VS Code's terminal, Ctrl+`) to r
 ```bash
 pip install playwright openpyxl
 python -m playwright install chromium
-./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py && python3 tests/test_format.py
+./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py && python3 tests/test_format.py && python3 tests/test_counts.py
 ```
 
 The GitHub tests run every flow against `tests/mock_github.js`, so they need no account or network:

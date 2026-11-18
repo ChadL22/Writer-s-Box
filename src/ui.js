@@ -447,7 +447,7 @@ function viewFiles(p, el) {
         ${all.length ? `<table class="ftable"><tbody>
           ${S.dir ? `<tr><td class="ic">${ic("up")}</td><td class="nm" colspan="3"><button class="link" data-dir="${esc(S.dir.split("/").slice(0, -1).join("/"))}">..</button></td></tr>` : ""}
           ${[...folders.keys()].sort().map(f => row(ic("folder", "solid folder"), f, `data-dir="${esc(pre + f)}"`, touchOf(folders.get(f)), folders.get(f).some(x => fileStatus(p, x) !== "clean") ? `<span class="label label-attention">Changes</span>` : "")).join("")}
-          ${files.map(path => { const st = fileStatus(p, path); return row(fileIcon(path), path.slice(pre.length), `data-file="${esc(path)}"`, lt[path], (secFmt(path) && p.working[path] && secIncludes(p, path).length ? `<span class="label" title="Made of section files">${ic("sections")} ${secIncludes(p, path).length} sections</span> ` : "") + statusLabel(st), st === "deleted" ? "del" : ""); }).join("")}
+          ${files.map(path => { const st = fileStatus(p, path); return row(fileIcon(path), path.slice(pre.length), `data-file="${esc(path)}"`, lt[path], (secFmt(path) && p.working[path] && secIncludes(p, path).length ? `<span class="label" title="Made of section files">${ic("sections")} ${secIncludes(p, path).length} sections</span> ` : "") + limitLabel(p, path) + statusLabel(st), st === "deleted" ? "del" : ""); }).join("")}
         </tbody></table>` : `<div class="blankslate">${ic("import")}<h3>Bring in your writing</h3><p class="muted">Import Google Docs, Word files or a LaTeX project, or start a new file.</p><div class="row"><button class="btn btn-primary" data-tab="import">Import documents</button></div></div>`}
       </div>
     </div>
@@ -490,7 +490,7 @@ function viewFile(p, el) {
   const lines = (mode === "preview" && secInc.length ? assemble(p, path) : f.text).split("\n");
   const dlOpts = sheet ? [["orig", `Original (.${extOf(path)})`], ...(extOf(path) !== "xlsx" ? [["xlsx", "As Excel (.xlsx)"]] : []), ["csvs", "As CSV (.csv)"]]
     : [["orig", `Original (.${extOf(path)})`], ...(["md", "markdown", "txt"].includes(extOf(path)) ? [["docx", "As Word (.docx)"]] : []), ...(extOf(path) !== "txt" ? [["txt", "As plain text (.txt)"]] : []), ...(secInc.length ? [["combined", "Whole document, sections combined"]] : [])];
-  const metaText = () => sheet ? sheetSummary(f.text) : `${f.text.split("\n").length} ${docx ? "paragraphs" : "lines"} · ${wordCount(f.text).toLocaleString()} words`;
+  const metaText = () => sheet ? sheetSummary(f.text) : `${f.text.split("\n").length} ${docx ? "paragraphs" : "lines"}`;
   el.innerHTML = `
     ${unsavedFlash(p)}
     <div class="breadcrumb"><button class="link" data-dir="">${esc(p.name)}</button>${parts.map((seg, i) => ` <span class="muted">/</span> ${i === parts.length - 1 ? `<strong>${esc(seg)}</strong>` : `<button class="link" data-dir="${esc(parts.slice(0, i + 1).join("/"))}">${esc(seg)}</button>`}`).join("")}</div>
@@ -538,6 +538,7 @@ function viewFile(p, el) {
     else if (html) { const tmp = document.createElement("div"); tmp.innerHTML = html; if (fl) fl.replaceWith(tmp.firstElementChild); else el.prepend(tmp.firstElementChild); bindFlash(p, el); }
   }
   if (sheet && mode === "write") sheetGrid(p, path, f, $("#grid-mount"), afterEdit);
+  if (!sheet) mountCountBar(p, path, el);
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-live").onclick = () => shareLiveFlow(p, path);
@@ -1114,6 +1115,7 @@ async function saveFlow() {
     title: "Save version",
     body: `<label for="sv-msg">Describe this version<input type="text" id="sv-msg" placeholder="Tighten recommendation after review" maxlength="140" value="${esc(S.suggestedMsg || "")}"></label>
       <div class="Box">${changes.map(c => `<div class="Box-row">${fileIcon(c.path)}<span class="mono grow" style="font-size:12px">${esc(c.path)}</span>${statusLabel(c.status)}</div>`).join("")}</div>
+      ${(() => { const probs = limitProblems(p, [...new Set([...changes.map(c => c.path), ...changes.flatMap(c => p.working[c.path] ? secParents(p, c.path) : [])])]); return probs.length ? `<div class="flash" style="margin-top:12px">${ic("alert")}<span>${probs.map(x => `<strong>${esc(x.path)}</strong> is ${limitStatusText(x.L, x.r)} (${limitText(x.L)})`).join("<br>")}. You can still save.</span></div>` : ""; })()}
       <p class="muted">Saving to ${ic("branch")} <span class="branch-name">${esc(p.current)}</span>. A version captures every file in the project.</p>`,
     onOpen: ov => $("#sv-msg", ov).addEventListener("keydown", e => { if (e.key === "Enter") $(".mactions .btn-primary", ov).click(); }),
     actions: [{ label: "Cancel", value: null }, { label: "Save version", primary: true, onClick: ov => $("#sv-msg", ov).value.trim() || "Untitled version" }]

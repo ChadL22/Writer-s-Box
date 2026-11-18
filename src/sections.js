@@ -104,7 +104,7 @@ function sectionsBar(p, path) {
       ${open ? `<ol class="sec-list">${incs.map((s, i) => `<li class="Box-row" data-sec="${i}">
         <span class="sec-n">${i + 1}</span>
         <div class="grow" style="min-width:0">${s.exists ? `<button class="link sec-title" data-sec-open="${esc(s.path)}">${esc(secTitle(p, s.path))}</button>` : `<span class="sec-title">${esc(stemOf(s.path))}</span> <span class="label label-danger">File missing</span>`}<div class="muted mono sec-path">${esc(s.path)}</div></div>
-        ${s.exists ? `<span class="muted" style="font-size:12px;white-space:nowrap">${wordCount(p.working[s.path].text).toLocaleString()} words</span>${statusLabel(fileStatus(p, s.path))}` : ""}
+        ${s.exists ? `${sectionCountHtml(p, s.path)}${statusLabel(fileStatus(p, s.path))}` : ""}
         <button class="btn-octicon" data-sec-up="${i}" ${i ? "" : "disabled"} title="Move up" aria-label="Move ${esc(s.path)} up">${ic("chevronUp")}</button>
         <button class="btn-octicon" data-sec-down="${i}" ${i < incs.length - 1 ? "" : "disabled"} title="Move down" aria-label="Move ${esc(s.path)} down">${ic("chevronDown")}</button>
         <button class="btn-octicon" data-sec-rm="${i}" title="Remove from this document" aria-label="Remove ${esc(s.path)}">${ic("x")}</button></li>`).join("")}</ol>` : ""}
