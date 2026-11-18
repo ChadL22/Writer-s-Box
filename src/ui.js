@@ -34,6 +34,7 @@ const P_ = {
   chevronUp: '<path d="M4.5 10l3.5-3.5 3.5 3.5"/>',
   chevronDown: '<path d="M4.5 6l3.5 3.5 3.5-3.5"/>',
   format: '<path d="M1.75 13.25 5.5 2.75h1l3.75 10.5M3.1 9.5h5.8M11.25 8.25c.4-.6 1-.9 1.75-.9 1.1 0 1.75.7 1.75 1.8v4.1M14.75 10.6c-2.4 0-3.5.6-3.5 1.6 0 .7.5 1.15 1.3 1.15 1.2 0 2.2-.9 2.2-2.2"/>',
+  eye: '<path d="M1.5 8s2.4-4.75 6.5-4.75S14.5 8 14.5 8s-2.4 4.75-6.5 4.75S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/>',
   quote: '<path d="M2.75 8.5h3.5v4.25H2.75zM2.75 8.5c0-2.6 1-4.4 3.25-5.25M9.75 8.5h3.5v4.25h-3.5zM9.75 8.5c0-2.6 1-4.4 3.25-5.25"/>',
   pilcrow: '<path d="M7.5 2.25v11.5M10.25 2.25v11.5M12 2.25H6.5a2.75 2.75 0 0 0 0 5.5h1"/>',
   x: '<path d="M4 4l8 8M12 4l-8 8"/>',
@@ -504,7 +505,7 @@ function viewFile(p, el) {
     ${sectionsBar(p, path)}
     <div class="Box">
       <div class="Box-header blob-head">
-        <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview">${sheet ? "As text" : "Preview"}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="Which version last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Line history</button></div>
+        <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write" title="${sheet ? "Edit the cells" : "Edit your writing"}">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview" title="${sheet ? "See the sheet as text" : "See it as a reader will, on a page"}">${sheet ? "As text" : `${ic("eye")} Preview`}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="See which version, and who, last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Who wrote what</button></div>
         <span class="muted" id="f-meta">${metaText()}</span>
         <span class="label">${typeLabel(path)}</span><span id="f-status">${statusLabel(st)}</span>
         <span class="grow"></span>
@@ -517,7 +518,8 @@ function viewFile(p, el) {
         <button class="btn-octicon" id="f-ren" title="Rename" aria-label="Rename">${ic("pencil")}</button>
         <button class="btn-octicon" id="f-rm" title="Remove file" aria-label="Remove file">${ic("trash")}</button>
       </div>
-      ${mode === "blame" ? `<div id="blame-mount"></div>` : sheet && mode === "write" ? `<div id="grid-mount"></div>` : mode === "write" ? `<label class="sr" for="ed">File text</label><textarea class="editor-area" id="ed" spellcheck="${isProse(path)}">${esc(f.text)}</textarea>`
+      ${mode === "blame" ? `<div id="blame-mount"></div>` : sheet && mode === "write" ? `<div id="grid-mount"></div>` : mode === "write" ? `<label class="sr" for="ed">File text</label><textarea class="editor-area${isProse(path) ? " prose" : ""}" id="ed" spellcheck="${isProse(path)}" placeholder="Start writing…">${esc(f.text)}</textarea>`
+        : mode === "preview" && !sheet && pageable(path) ? `<div id="pv-mount"></div>`
         : `<div style="overflow-x:auto"><table class="code-view"><tbody>${lines.map((l, i) => `<tr><td class="n">${docx ? "¶" : ""}${i + 1}</td><td class="t">${(sheet ? (l.startsWith(SHEET_HDR) ? "<strong>" + esc(l) + "</strong>" : esc(l).replace(/\t/g, '<span class="csep"></span>')) : esc(l)) || " "}</td></tr>`).join("")}</tbody></table></div>`}
     </div>`;
   bindFlash(p, el);
@@ -541,6 +543,7 @@ function viewFile(p, el) {
   }
   if (sheet && mode === "write") sheetGrid(p, path, f, $("#grid-mount"), afterEdit);
   if (!sheet) mountCountBar(p, path, el);
+  const pvm = $("#pv-mount"); if (pvm) mountReadingPage(p, path, pvm);
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-live").onclick = () => shareLiveFlow(p, path);
@@ -568,8 +571,8 @@ function noteFor(path, f) {
   if (kindOf(path) === "sheet") return f.orig
     ? "Spreadsheet: values and formulas are versioned cell by cell, one row at a time. The original file, with its formatting and charts, is kept until you edit."
     : "Edited spreadsheet: downloads rebuild the workbook with values and formulas only. Earlier versions keep their original files.";
-  return f.orig ? "Word document: you're editing its text, one paragraph per line. The original .docx and its formatting are kept until you edit."
-    : "Edited Word text: “Original” downloads rebuild a plain .docx. Earlier versions keep their original files.";
+  return f.orig ? "Word document. Write edits the words, one paragraph per line; Preview shows it on a page. Your Word formatting is kept until you change the text."
+    : "You've edited the words of this Word document. Downloading it gives a plain Word file; for APA, MLA or another style, use Format. Earlier versions keep the original file.";
 }
 function sheetGrid(p, path, f, mount, onEdit) {
   const sheets = textToSheets(f.text);

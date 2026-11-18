@@ -130,7 +130,8 @@ async def main():
         # preview is assembled
         await page.click('[data-mode="preview"]')
         await page.wait_for_timeout(200)
-        pv = await page.inner_text(".code-view")
+        await page.wait_for_selector(".pg-paper p")
+        pv = await page.inner_text(".pg-paper")
         check("preview shows the whole document", "Why it matters." in pv and "What we found." in pv)
         await page.click('[data-mode="write"]')
 

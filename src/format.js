@@ -748,3 +748,54 @@ function outlineResultFlow(p, r) {
     } }]
   });
 }
+
+/* ============ Preview: the document as a reader sees it ============
+   A white page with real headings, italics, footnotes, printed citations and the reference list. No markup. */
+const PAGE_EXT = ["md", "markdown", "tex", "txt", "docx"];
+const pageable = path => PAGE_EXT.includes(extOf(path));
+async function readingPage(p, path) {
+  const doc = await docBlocks(p, path), style = S.refStyle || "apa";
+  const ce = citeEngine(p, { citations: { mode: style === "bluebook" ? "bluebook" : "author-date", style: style === "bluebook" ? "chicago" : style } });
+  const notes = [];
+  const inline = s => {
+    let out = "", last = 0; const re = /\u0001C(.*?)\u0002|\u0001F(.*?)\u0002/g; let m;
+    const fmt = t => segsOf(t).map(sg => `${sg.b ? "<strong>" : ""}${sg.i ? "<em>" : ""}${esc(sg.text)}${sg.i ? "</em>" : ""}${sg.b ? "</strong>" : ""}`).join("");
+    while ((m = re.exec(s))) {
+      out += fmt(s.slice(last, m.index)); last = re.lastIndex;
+      if (m[1] != null) { let c; try { c = JSON.parse(m[1]); } catch (e) { continue; } if (style === "bluebook") { notes.push(ce.note(c)); out = out.replace(/\s+$/, ""); out += `<sup class="pg-fn"><a href="#pg-n${notes.length}" id="pg-r${notes.length}">${notes.length}</a></sup>`; } else { const t = ce.inText(c); out += `<span class="pg-cite${/\?/.test(t) ? " missing" : ""}" title="${/\?/.test(t) ? "Not in your references yet" : "Citation"}">${fmt(t)}</span>`; } }
+      else { notes.push(m[2]); out = out.replace(/\s+$/, ""); out += `<sup class="pg-fn"><a href="#pg-n${notes.length}" id="pg-r${notes.length}">${notes.length}</a></sup>`; }
+    }
+    return out + fmt(s.slice(last));
+  };
+  const parts = [], meta = doc.meta || {};
+  if (meta.title) parts.push(`<h1 class="pg-title">${inline(meta.title)}</h1>`);
+  const by = [meta.author, meta.date].filter(Boolean).join(" · "); if (by) parts.push(`<p class="pg-byline">${esc(by)}</p>`);
+  let list = null;
+  const closeList = () => { if (list) { parts.push(`</${list}>`); list = null; } };
+  for (const b of doc.blocks) {
+    if (b.t === "li") { const want = b.ordered ? "ol" : "ul"; if (list !== want) { closeList(); parts.push(`<${want}>`); list = want; } parts.push(`<li>${inline(b.text)}</li>`); continue; }
+    closeList();
+    if (b.t === "h") { const lvl = Math.min(4, b.level + 1); parts.push(`<h${lvl}>${inline(b.text)}</h${lvl}>`); }
+    else if (b.t === "abstract") parts.push(`<section class="pg-abstract"><h2>Abstract</h2><p>${inline(b.text)}</p></section>`);
+    else if (b.t === "quote") parts.push(`<blockquote>${inline(b.text)}</blockquote>`);
+    else if (b.t === "code") parts.push(`<pre>${esc(b.text)}</pre>`);
+    else parts.push(`<p>${inline(b.text)}</p>`);
+  }
+  closeList();
+  if (!doc.blocks.length && !meta.title) parts.push(`<p class="pg-empty">Nothing written yet. Switch to <strong>Write</strong> to start.</p>`);
+  if (notes.length) parts.push(`<section class="pg-notes"><h2>Notes</h2><ol>${notes.map((n, i) => `<li id="pg-n${i + 1}">${inline(n)} <a href="#pg-r${i + 1}" class="pg-back" aria-label="Back to the text">↩</a></li>`).join("")}</ol></section>`);
+  const used = ce.used.map(k => ce.lib.get(k)).filter(Boolean);
+  if (used.length && style !== "bluebook") parts.push(`<section class="pg-refs"><h2>${{ mla: "Works Cited", chicago: "Bibliography" }[style] || "References"}</h2>${sortRefs(used).map(r => `<p>${refHtml(formatRef(r, style))}</p>`).join("")}</section>`);
+  const missing = [...ce.missing];
+  return { html: parts.join(""), missing, words: null };
+}
+function mountReadingPage(p, path, mount) {
+  mount.innerHTML = `<div class="pg-wrap"><div class="pg-paper"><p class="muted">Laying out the page…</p></div></div>`;
+  readingPage(p, path).then(r => {
+    const style = STYLES[S.refStyle || "apa"];
+    mount.innerHTML = `<div class="pg-bar"><span>${ic("eye")} This is how your writing reads. Citations show in ${esc(style)}.</span><span class="grow"></span>${r.missing.length ? `<span class="label label-attention" title="${esc(r.missing.join(", "))}">${r.missing.length} citation${r.missing.length > 1 ? "s" : ""} not in References</span>` : ""}<button class="btn btn-sm" data-tab="format">${ic("format")} Format as APA, MLA…</button></div>
+      <div class="pg-wrap"><article class="pg-paper">${r.html}</article></div>`;
+    mount.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
+    mount.querySelectorAll('a[href^="#pg-"]').forEach(a => a.onclick = e => { e.preventDefault(); const t = mount.querySelector(a.getAttribute("href")); if (t) t.scrollIntoView({ behavior: "smooth", block: "center" }); });
+  }).catch(e => { mount.innerHTML = `<div class="flash">${ic("alert")}<span>Couldn't show the page: ${esc(e.message)}</span></div>`; });
+}

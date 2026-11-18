@@ -568,6 +568,33 @@ ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column;
 .cnt-table tr.muted td { color: var(--muted); }
 .cnt-total td { font-weight: 600; border-bottom: 0; }
 .cd-add { margin-top: 12px; }
+/* Writing and reading */
+.editor-area.prose { font: 17px/1.8 Georgia, "Iowan Old Style", "Times New Roman", serif; padding: 40px max(24px, calc((100% - 760px) / 2)); color: var(--fg); }
+.editor-area.prose::placeholder { color: var(--muted); font-style: italic; }
+#pv-mount { background: var(--canvas-subtle); border-radius: 0 0 6px 6px; }
+.pg-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); }
+.pg-bar > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.pg-wrap { padding: 32px 16px 48px; }
+.pg-paper { max-width: 816px; margin: 0 auto; background: #fff; color: #1f2328; padding: 72px clamp(24px, 9%, 96px) 88px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08); font: 17px/1.75 Georgia, "Iowan Old Style", "Times New Roman", serif; overflow-wrap: break-word; }
+.pg-paper p { margin: 0 0 1em; }
+.pg-paper h1, .pg-paper h2, .pg-paper h3, .pg-paper h4 { font-family: inherit; color: #1f2328; line-height: 1.3; margin: 1.6em 0 .6em; border: 0; padding: 0; }
+.pg-paper h1 { font-size: 30px; } .pg-paper h2 { font-size: 23px; } .pg-paper h3 { font-size: 19px; } .pg-paper h4 { font-size: 17px; font-style: italic; }
+.pg-paper .pg-title { font-size: 32px; text-align: center; margin: 0 0 .3em; }
+.pg-byline { text-align: center; color: #57606a; font-style: italic; margin-bottom: 2.5em !important; }
+.pg-paper blockquote { margin: 0 0 1em; padding: 0 0 0 1.4em; border-left: 3px solid #d0d7de; color: #424a53; }
+.pg-paper ul, .pg-paper ol { margin: 0 0 1em; padding-left: 1.6em; }
+.pg-paper pre { font: 13px/1.5 var(--mono); background: #f6f8fa; padding: 12px; border-radius: 6px; white-space: pre-wrap; }
+.pg-paper a { color: #0969da; }
+.pg-abstract { background: #f6f8fa; border-radius: 6px; padding: 4px 24px 8px; margin: 0 0 2em; font-size: 16px; }
+.pg-abstract h2 { font-size: 15px !important; text-transform: uppercase; letter-spacing: .06em; margin: 1em 0 .4em !important; }
+.pg-cite { color: #1f2328; border-bottom: 1px dotted #8c959f; }
+.pg-cite.missing { background: #fff8c5; border-bottom-color: #bf8700; }
+.pg-fn a { text-decoration: none; font-size: 12px; padding: 0 1px; }
+.pg-notes, .pg-refs { margin-top: 3em; padding-top: 1em; border-top: 1px solid #d0d7de; font-size: 15px; }
+.pg-notes h2, .pg-refs h2 { font-size: 19px !important; margin-top: .4em !important; }
+.pg-refs p { padding-left: 2em; text-indent: -2em; }
+.pg-back { text-decoration: none; color: #57606a !important; }
+.pg-empty { text-align: center; color: #57606a; font-style: italic; }
 </style>
 </head>
 <body>
@@ -1005,6 +1032,7 @@ const P_ = {
   chevronUp: '<path d="M4.5 10l3.5-3.5 3.5 3.5"/>',
   chevronDown: '<path d="M4.5 6l3.5 3.5 3.5-3.5"/>',
   format: '<path d="M1.75 13.25 5.5 2.75h1l3.75 10.5M3.1 9.5h5.8M11.25 8.25c.4-.6 1-.9 1.75-.9 1.1 0 1.75.7 1.75 1.8v4.1M14.75 10.6c-2.4 0-3.5.6-3.5 1.6 0 .7.5 1.15 1.3 1.15 1.2 0 2.2-.9 2.2-2.2"/>',
+  eye: '<path d="M1.5 8s2.4-4.75 6.5-4.75S14.5 8 14.5 8s-2.4 4.75-6.5 4.75S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/>',
   quote: '<path d="M2.75 8.5h3.5v4.25H2.75zM2.75 8.5c0-2.6 1-4.4 3.25-5.25M9.75 8.5h3.5v4.25h-3.5zM9.75 8.5c0-2.6 1-4.4 3.25-5.25"/>',
   pilcrow: '<path d="M7.5 2.25v11.5M10.25 2.25v11.5M12 2.25H6.5a2.75 2.75 0 0 0 0 5.5h1"/>',
   x: '<path d="M4 4l8 8M12 4l-8 8"/>',
@@ -1475,7 +1503,7 @@ function viewFile(p, el) {
     ${sectionsBar(p, path)}
     <div class="Box">
       <div class="Box-header blob-head">
-        <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview">${sheet ? "As text" : "Preview"}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="Which version last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Line history</button></div>
+        <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write" title="${sheet ? "Edit the cells" : "Edit your writing"}">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview" title="${sheet ? "See the sheet as text" : "See it as a reader will, on a page"}">${sheet ? "As text" : `${ic("eye")} Preview`}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="See which version, and who, last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Who wrote what</button></div>
         <span class="muted" id="f-meta">${metaText()}</span>
         <span class="label">${typeLabel(path)}</span><span id="f-status">${statusLabel(st)}</span>
         <span class="grow"></span>
@@ -1488,7 +1516,8 @@ function viewFile(p, el) {
         <button class="btn-octicon" id="f-ren" title="Rename" aria-label="Rename">${ic("pencil")}</button>
         <button class="btn-octicon" id="f-rm" title="Remove file" aria-label="Remove file">${ic("trash")}</button>
       </div>
-      ${mode === "blame" ? `<div id="blame-mount"></div>` : sheet && mode === "write" ? `<div id="grid-mount"></div>` : mode === "write" ? `<label class="sr" for="ed">File text</label><textarea class="editor-area" id="ed" spellcheck="${isProse(path)}">${esc(f.text)}</textarea>`
+      ${mode === "blame" ? `<div id="blame-mount"></div>` : sheet && mode === "write" ? `<div id="grid-mount"></div>` : mode === "write" ? `<label class="sr" for="ed">File text</label><textarea class="editor-area${isProse(path) ? " prose" : ""}" id="ed" spellcheck="${isProse(path)}" placeholder="Start writing…">${esc(f.text)}</textarea>`
+        : mode === "preview" && !sheet && pageable(path) ? `<div id="pv-mount"></div>`
         : `<div style="overflow-x:auto"><table class="code-view"><tbody>${lines.map((l, i) => `<tr><td class="n">${docx ? "¶" : ""}${i + 1}</td><td class="t">${(sheet ? (l.startsWith(SHEET_HDR) ? "<strong>" + esc(l) + "</strong>" : esc(l).replace(/\t/g, '<span class="csep"></span>')) : esc(l)) || " "}</td></tr>`).join("")}</tbody></table></div>`}
     </div>`;
   bindFlash(p, el);
@@ -1512,6 +1541,7 @@ function viewFile(p, el) {
   }
   if (sheet && mode === "write") sheetGrid(p, path, f, $("#grid-mount"), afterEdit);
   if (!sheet) mountCountBar(p, path, el);
+  const pvm = $("#pv-mount"); if (pvm) mountReadingPage(p, path, pvm);
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-live").onclick = () => shareLiveFlow(p, path);
@@ -1539,8 +1569,8 @@ function noteFor(path, f) {
   if (kindOf(path) === "sheet") return f.orig
     ? "Spreadsheet: values and formulas are versioned cell by cell, one row at a time. The original file, with its formatting and charts, is kept until you edit."
     : "Edited spreadsheet: downloads rebuild the workbook with values and formulas only. Earlier versions keep their original files.";
-  return f.orig ? "Word document: you're editing its text, one paragraph per line. The original .docx and its formatting are kept until you edit."
-    : "Edited Word text: “Original” downloads rebuild a plain .docx. Earlier versions keep their original files.";
+  return f.orig ? "Word document. Write edits the words, one paragraph per line; Preview shows it on a page. Your Word formatting is kept until you change the text."
+    : "You've edited the words of this Word document. Downloading it gives a plain Word file; for APA, MLA or another style, use Format. Earlier versions keep the original file.";
 }
 function sheetGrid(p, path, f, mount, onEdit) {
   const sheets = textToSheets(f.text);
@@ -4980,6 +5010,57 @@ function outlineResultFlow(p, r) {
       fmtState(p).doc = path; persist(p, true); go("file", { file: path, fileMode: "write" }); toast(`Started ${path} from the outline. Save a version when you're ready.`); return true;
     } }]
   });
+}
+
+/* ============ Preview: the document as a reader sees it ============
+   A white page with real headings, italics, footnotes, printed citations and the reference list. No markup. */
+const PAGE_EXT = ["md", "markdown", "tex", "txt", "docx"];
+const pageable = path => PAGE_EXT.includes(extOf(path));
+async function readingPage(p, path) {
+  const doc = await docBlocks(p, path), style = S.refStyle || "apa";
+  const ce = citeEngine(p, { citations: { mode: style === "bluebook" ? "bluebook" : "author-date", style: style === "bluebook" ? "chicago" : style } });
+  const notes = [];
+  const inline = s => {
+    let out = "", last = 0; const re = /\u0001C(.*?)\u0002|\u0001F(.*?)\u0002/g; let m;
+    const fmt = t => segsOf(t).map(sg => `${sg.b ? "<strong>" : ""}${sg.i ? "<em>" : ""}${esc(sg.text)}${sg.i ? "</em>" : ""}${sg.b ? "</strong>" : ""}`).join("");
+    while ((m = re.exec(s))) {
+      out += fmt(s.slice(last, m.index)); last = re.lastIndex;
+      if (m[1] != null) { let c; try { c = JSON.parse(m[1]); } catch (e) { continue; } if (style === "bluebook") { notes.push(ce.note(c)); out = out.replace(/\s+$/, ""); out += `<sup class="pg-fn"><a href="#pg-n${notes.length}" id="pg-r${notes.length}">${notes.length}</a></sup>`; } else { const t = ce.inText(c); out += `<span class="pg-cite${/\?/.test(t) ? " missing" : ""}" title="${/\?/.test(t) ? "Not in your references yet" : "Citation"}">${fmt(t)}</span>`; } }
+      else { notes.push(m[2]); out = out.replace(/\s+$/, ""); out += `<sup class="pg-fn"><a href="#pg-n${notes.length}" id="pg-r${notes.length}">${notes.length}</a></sup>`; }
+    }
+    return out + fmt(s.slice(last));
+  };
+  const parts = [], meta = doc.meta || {};
+  if (meta.title) parts.push(`<h1 class="pg-title">${inline(meta.title)}</h1>`);
+  const by = [meta.author, meta.date].filter(Boolean).join(" · "); if (by) parts.push(`<p class="pg-byline">${esc(by)}</p>`);
+  let list = null;
+  const closeList = () => { if (list) { parts.push(`</${list}>`); list = null; } };
+  for (const b of doc.blocks) {
+    if (b.t === "li") { const want = b.ordered ? "ol" : "ul"; if (list !== want) { closeList(); parts.push(`<${want}>`); list = want; } parts.push(`<li>${inline(b.text)}</li>`); continue; }
+    closeList();
+    if (b.t === "h") { const lvl = Math.min(4, b.level + 1); parts.push(`<h${lvl}>${inline(b.text)}</h${lvl}>`); }
+    else if (b.t === "abstract") parts.push(`<section class="pg-abstract"><h2>Abstract</h2><p>${inline(b.text)}</p></section>`);
+    else if (b.t === "quote") parts.push(`<blockquote>${inline(b.text)}</blockquote>`);
+    else if (b.t === "code") parts.push(`<pre>${esc(b.text)}</pre>`);
+    else parts.push(`<p>${inline(b.text)}</p>`);
+  }
+  closeList();
+  if (!doc.blocks.length && !meta.title) parts.push(`<p class="pg-empty">Nothing written yet. Switch to <strong>Write</strong> to start.</p>`);
+  if (notes.length) parts.push(`<section class="pg-notes"><h2>Notes</h2><ol>${notes.map((n, i) => `<li id="pg-n${i + 1}">${inline(n)} <a href="#pg-r${i + 1}" class="pg-back" aria-label="Back to the text">↩</a></li>`).join("")}</ol></section>`);
+  const used = ce.used.map(k => ce.lib.get(k)).filter(Boolean);
+  if (used.length && style !== "bluebook") parts.push(`<section class="pg-refs"><h2>${{ mla: "Works Cited", chicago: "Bibliography" }[style] || "References"}</h2>${sortRefs(used).map(r => `<p>${refHtml(formatRef(r, style))}</p>`).join("")}</section>`);
+  const missing = [...ce.missing];
+  return { html: parts.join(""), missing, words: null };
+}
+function mountReadingPage(p, path, mount) {
+  mount.innerHTML = `<div class="pg-wrap"><div class="pg-paper"><p class="muted">Laying out the page…</p></div></div>`;
+  readingPage(p, path).then(r => {
+    const style = STYLES[S.refStyle || "apa"];
+    mount.innerHTML = `<div class="pg-bar"><span>${ic("eye")} This is how your writing reads. Citations show in ${esc(style)}.</span><span class="grow"></span>${r.missing.length ? `<span class="label label-attention" title="${esc(r.missing.join(", "))}">${r.missing.length} citation${r.missing.length > 1 ? "s" : ""} not in References</span>` : ""}<button class="btn btn-sm" data-tab="format">${ic("format")} Format as APA, MLA…</button></div>
+      <div class="pg-wrap"><article class="pg-paper">${r.html}</article></div>`;
+    mount.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
+    mount.querySelectorAll('a[href^="#pg-"]').forEach(a => a.onclick = e => { e.preventDefault(); const t = mount.querySelector(a.getAttribute("href")); if (t) t.scrollIntoView({ behavior: "smooth", block: "center" }); });
+  }).catch(e => { mount.innerHTML = `<div class="flash">${ic("alert")}<span>Couldn't show the page: ${esc(e.message)}</span></div>`; });
 }
 
 /* ============ Word and character counts, limits ============

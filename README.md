@@ -125,6 +125,7 @@ writers-box/
 │   ├── mock_github.js  ← in-memory stand-in for the GitHub REST API
 │   ├── test_refs.py    ← references tests: BibTeX engine, import/export, citing (45 checks)
 │   ├── test_format.py  ← styles, Word output (python-docx + LibreOffice), LaTeX, style import, structure, OpenRouter (63 checks)
+│   ├── test_preview.py ← Preview shows a formatted page; Write uses a writing font (16 checks)
 │   ├── test_reload.py  ← refreshing keeps your project and screen (8 checks)
 │   ├── test_counts.py  ← counting rules, selection counts, limits and warnings (27 checks)
 │   ├── test_sections.py ← sections and Back/Forward navigation (32 checks)
@@ -143,7 +144,7 @@ Edit files in `src/`, then run `./build.sh` (in VS Code's terminal, Ctrl+`) to r
 ```bash
 pip install playwright openpyxl
 python -m playwright install chromium
-./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py && python3 tests/test_format.py && python3 tests/test_counts.py && python3 tests/test_reload.py
+./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py && python3 tests/test_format.py && python3 tests/test_counts.py && python3 tests/test_reload.py && python3 tests/test_preview.py
 ```
 
 The GitHub tests run every flow against `tests/mock_github.js`, so they need no account or network:
