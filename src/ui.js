@@ -42,6 +42,7 @@ const P_ = {
   undo: '<path d="M4.5 6.5h6a3 3 0 0 1 0 6H7"/><path d="M6.75 4 4.25 6.5l2.5 2.5"/>',
   gear: '<circle cx="8" cy="8" r="2.25"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>',
   up: '<path d="M8 13V3M4 7l4-4 4 4"/>',
+  people: '<circle cx="6" cy="5.5" r="2.25"/><path d="M1.75 13.5c0-2.5 1.9-4.25 4.25-4.25s4.25 1.75 4.25 4.25"/><circle cx="11.5" cy="5" r="1.75"/><path d="M11 9c1.9 0 3.25 1.4 3.25 3.5"/>',
   paste: '<rect x="3" y="3" width="10" height="11.25" rx="1.5"/><path d="M6 1.75h4v2.5H6z"/><path d="M5.75 8h4.5M5.75 10.5h3"/>'
 };
 const ic = (name, cls = "") => `<svg class="oc ${cls}" viewBox="0 0 16 16" aria-hidden="true">${P_[name]}</svg>`;
@@ -354,7 +355,7 @@ function renderRepoHead() {
   const nV = Object.keys(p.versions).length, nD = Object.keys(p.drafts).length, remote = isRemote(p);
   const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route;
   const cnt = k => { const c = GH.cache[`${k}:${p.id}:open`]; return c ? c.data.length : ""; };
-  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
+  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["live", "people", "Live", Object.keys(p.live || {}).length || ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
   el.innerHTML = `<div class="repotitle">${ic("book")}<span class="owner">${esc(remote ? p.remote.owner : "local")}</span><span class="muted">/</span><strong>${esc(remote ? p.remote.repo : p.name)}</strong>
       <span class="label">${remote ? (p.remote.private ? "Private" : "Public") : "Stored on this device"}</span><span class="grow"></span>
       ${remote ? `<span class="muted" style="font-size:12px">${p.remote.syncedAt ? "Synced " + ago(p.remote.syncedAt) : "Not synced yet"}</span><button class="btn btn-sm" id="r-sync" ${ghSignedIn() ? "" : 'title="Sign in to sync"'}>${ic("undo")} Sync</button><a class="btn btn-sm" href="${esc(p.remote.htmlUrl || `https://github.com/${p.remote.owner}/${p.remote.repo}`)}" target="_blank" rel="noopener">View on GitHub</a>`
@@ -371,7 +372,7 @@ function renderView() {
   if (S.route === "profile") return viewProfile(p, el);
   if (!p) { el.innerHTML = `<div class="Box blankslate">${ic("book")}<h3>No projects yet</h3><p class="muted">A project holds a paper, a book or a memo series, with every version you save.</p><button class="btn btn-primary" id="np">New project</button></div>`; $("#np").onclick = createProjectFlow; return; }
   ({ files: viewFiles, file: viewFile, history: viewHistory, version: viewVersion, drafts: viewDrafts, compare: viewCompare, import: viewImport,
-     reviews: viewReviews, review: viewReview, notes: viewNotes, note: viewNote, insights: viewInsights, settings: viewSettings }[S.route] || viewFiles)(p, el);
+     reviews: viewReviews, review: viewReview, live: viewLive, notes: viewNotes, note: viewNote, insights: viewInsights, settings: viewSettings }[S.route] || viewFiles)(p, el);
 }
 function draftPicker(p, id = "draft-sel") {
   const names = Object.keys(p.drafts).sort((a, b) => a === "main" ? -1 : b === "main" ? 1 : a.localeCompare(b));
@@ -478,6 +479,7 @@ function viewFile(p, el) {
     <div class="Box" style="margin-bottom:16px"><div class="Box-row" style="flex-wrap:wrap">
       ${lt ? `${avatarImg(ghImgOk() ? p.versions[lt].avatar : null, p.versions[lt].login || ME, 20)}${whoOf(p.versions[lt])}<button class="link link-muted" data-v="${lt}" style="color:var(--fg)">${esc(p.versions[lt].message)}</button><span class="grow"></span><span class="muted sha">${lt.slice(0, 7)}</span><span class="muted">· ${ago(p.versions[lt].time)}</span>` : `<span class="muted">Not in any saved version yet.</span><span class="grow"></span>`}
       <button class="btn btn-sm" data-tab="history">${ic("history")} History</button></div></div>
+    ${liveOf(p, path) ? `<div class="flash info live-flash">${ic("people")}<span>Live in <strong>${esc(liveTarget(liveOf(p, path).provider, path))}</strong> · <span data-lst>${liveOf(p, path).lastSeen ? liveStateHtml(liveOf(p, path)) : "shared " + ago(liveOf(p, path).sharedAt)}</span></span><span class="grow"></span><button class="btn btn-sm btn-primary" data-lback>${ic("import")} Bring changes back</button><a class="btn btn-sm" href="${esc(liveOf(p, path).url)}" target="_blank" rel="noopener">Open</a></div>` : ""}
     ${docx || sheet ? `<div class="flash info" id="docx-note">${ic("info")}<span>${noteFor(path, f)}</span></div>` : ""}
     <div class="Box">
       <div class="Box-header blob-head">
@@ -485,6 +487,7 @@ function viewFile(p, el) {
         <span class="muted" id="f-meta">${metaText()}</span>
         <span class="label">${typeLabel(path)}</span><span id="f-status">${statusLabel(st)}</span>
         <span class="grow"></span>
+        <button class="btn btn-sm" id="f-live">${ic("people")} ${liveOf(p, path) ? "Live" : "Collaborate live"}</button>
         <button class="btn btn-sm" id="f-cmp">${ic("compare")} Changes</button>
         <label class="sr" for="f-dl">Download</label>
         <select class="btn btn-sm" id="f-dl"><option value="">Download</option>${dlOpts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
@@ -516,6 +519,9 @@ function viewFile(p, el) {
   if (sheet && mode === "write") sheetGrid(p, path, f, $("#grid-mount"), afterEdit);
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
+  $("#f-live").onclick = () => shareLiveFlow(p, path);
+  const lb = el.querySelector("[data-lback]"); if (lb) lb.onclick = () => bringBackFlow(p, path);
+  if (liveOf(p, path) && !liveBlocked()) liveStatus(p, path).then(() => { const s = el.querySelector("[data-lst]"); if (s) s.innerHTML = liveStateHtml(liveOf(p, path)); }).catch(() => {});
   $("#f-dl").onchange = async e => { const v = e.target.value; e.target.value = ""; if (v) await downloadAs(p, path, v); };
   $("#f-ren").onclick = async () => {
     const name = await askText("Rename file", "Path", path, "Rename", "Use slashes for folders, e.g. chapters/ch2.md"); if (!name || name === path) return;
@@ -1073,13 +1079,14 @@ async function saveFlow() {
   const p = P(), changes = changedPaths(p); if (!changes.length) return toast("Nothing has changed since the last version.");
   const msg = await modal({
     title: "Save version",
-    body: `<label for="sv-msg">Describe this version<input type="text" id="sv-msg" placeholder="Tighten recommendation after review" maxlength="140"></label>
+    body: `<label for="sv-msg">Describe this version<input type="text" id="sv-msg" placeholder="Tighten recommendation after review" maxlength="140" value="${esc(S.suggestedMsg || "")}"></label>
       <div class="Box">${changes.map(c => `<div class="Box-row">${fileIcon(c.path)}<span class="mono grow" style="font-size:12px">${esc(c.path)}</span>${statusLabel(c.status)}</div>`).join("")}</div>
       <p class="muted">Saving to ${ic("branch")} <span class="branch-name">${esc(p.current)}</span>. A version captures every file in the project.</p>`,
     onOpen: ov => $("#sv-msg", ov).addEventListener("keydown", e => { if (e.key === "Enter") $(".mactions .btn-primary", ov).click(); }),
     actions: [{ label: "Cancel", value: null }, { label: "Save version", primary: true, onClick: ov => $("#sv-msg", ov).value.trim() || "Untitled version" }]
   });
   if (!msg) return;
+  S.suggestedMsg = null;
   if (isRemote(p)) {
     if (!ghSignedIn()) return toast("Sign in with GitHub to save versions to this project.");
     const pm = progressModal("Saving to GitHub"); pm.set("Uploading changed files…");

@@ -1,6 +1,6 @@
 
 /* ============ Boot ============ */
-const ROUTES = ["home", "profile", "files", "history", "drafts", "reviews", "notes", "insights", "compare", "import", "settings"];
+const ROUTES = ["home", "profile", "files", "history", "drafts", "reviews", "notes", "live", "insights", "compare", "import", "settings"];
 let autoSynced = new Set();
 function autoSync() { const p = P(); if (p && isRemote(p) && ghSignedIn() && !autoSynced.has(p.id)) { autoSynced.add(p.id); syncFlow(p, true); } }
 (async function boot() {

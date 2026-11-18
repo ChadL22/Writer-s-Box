@@ -487,6 +487,8 @@ function viewSettings(p, el) {
       <div class="Box-row"><div class="grow"><strong>Visibility</strong><div class="muted">${p.remote.private ? "Private: only you and collaborators can see it." : "Public: anyone can read it."}</div></div><button class="btn btn-sm" id="st-vis" ${ghSignedIn() ? "" : "disabled"}>Make ${p.remote.private ? "public" : "private"}</button></div>`
       : `<div class="Box-row"><div class="grow"><strong>Publish to GitHub</strong><div class="muted">Keep this project online, invite collaborators, request reviews and track notes. Your full history comes along.</div></div><button class="btn btn-sm btn-primary" id="st-pub">${ghSignedIn() ? "Publish" : "Sign in to publish"}</button></div>`}</div>
     ${remote ? `<h2 class="set-h">Collaborators</h2><div class="Box" id="st-co"><div class="Box-body muted">${ghSignedIn() ? "Loading…" : "Sign in to see collaborators."}</div></div>` : ""}
+    <h2 class="set-h">Connections</h2>
+    <div class="Box">${["google", "microsoft"].map(pv => `<div class="Box-row"><div class="grow"><strong>${PROVIDERS[pv].doc}${pv === "google" ? " & Sheets" : " & Excel"}</strong><div class="muted">${liveClientId(pv) ? "Set up: you can share files for live editing." : "Not set up. Needed to share files for live editing with people who don't use GitHub."}</div></div><button class="btn btn-sm" data-conn="${pv}">${liveClientId(pv) ? "Change" : "Set up"}</button></div>`).join("")}</div>
     <h2 class="set-h">Backups</h2>
     <div class="Box"><div class="Box-row"><div class="grow"><strong>Export a backup</strong><div class="muted">Every version, draft and milestone in one .json file.</div></div><button class="btn btn-sm" id="st-exp">Export</button></div>
       <div class="Box-row"><div class="grow"><strong>Restore a backup</strong><div class="muted">Open a .writersbox.json file as a project.</div></div><label class="btn btn-sm" for="st-imp">Choose file</label><input type="file" id="st-imp" accept=".json,application/json" hidden></div></div>
@@ -502,6 +504,7 @@ function viewSettings(p, el) {
     try { const r = await gh(repoPath(p), { method: "PATCH", body: { private: toPrivate } }); p.remote.private = r.private; persist(p, true); render(); toast(`Now ${r.private ? "private" : "public"}.`); } catch (e) { toast(e.message); }
   };
   $("#st-exp").onclick = () => exportBackup(p);
+  el.querySelectorAll("[data-conn]").forEach(b => b.onclick = () => connectionFlow(b.dataset.conn, () => viewSettings(p, el)));
   $("#st-imp").onchange = async e => {
     const file = e.target.files[0]; if (!file) return;
     try { const j = JSON.parse(await file.text()); if (j.format !== "writers-box" || !j.project || !j.project.versions) throw new Error(); const np = j.project; if (S.projects.some(x => x.id === np.id)) { np.id = uid(); np.name += " (restored)"; } S.projects.push(np); S.pid = np.id; resetSel(); await persist(np, true); toast("Backup restored."); go("files"); }

@@ -454,6 +454,18 @@ fieldset.vis label.check { flex-direction: row; align-items: flex-start; gap: 8p
 .addc.doc { margin-left: 0; left: 4px; top: 4px; }
 .docdiff .dc:hover .addc, .docdiff .addc:focus-visible { opacity: 1; transform: none; }
 
+
+/* Live collaboration */
+.live-box { margin-bottom: 16px; }
+.live-box .Box-header .srcicon svg.oc { color: #fff; }
+.live-state { display: inline-flex; gap: 6px; align-items: center; }
+.live-cmt { align-items: flex-start; }
+.live-cmt .avatar { margin-top: 2px; }
+label.prov.dis { opacity: .55; }
+ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.live-flash .label { vertical-align: middle; }
+.flash .btn-primary svg.oc, .Box-row .btn-primary svg.oc { color: #fff; }
+
 /* Dialog + toast */
 .overlay { position: fixed; inset: 0; background: rgba(31,35,40,.5); display: flex; align-items: flex-start; justify-content: center; padding: 10vh 16px; z-index: 50; }
 .modal { width: min(560px, 100%); background: var(--canvas); border-radius: 12px; box-shadow: var(--overlay-shadow); display: flex; flex-direction: column; max-height: 80vh; }

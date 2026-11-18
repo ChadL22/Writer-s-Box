@@ -14,6 +14,7 @@ GitHub for writers: version history, drafts, reviews, notes and insights for LaT
 | Versions, drafts, milestones | ✓ | ✓ as commits, branches and tags |
 | Compare, line history, insights | ✓ | ✓ |
 | Reviews, notes, collaborators, profile | — | ✓ as pull requests, issues and collaborators |
+| Live co-editing with people who don't use GitHub | ✓ via Google Docs / Word for the web | ✓ via Google Docs / Word for the web |
 
 GitHub mode works on the hosted site (GitHub Pages). It doesn't work inside Claude's preview, which blocks connections to other sites.
 
@@ -32,6 +33,12 @@ Click **Sign in with GitHub** and paste a personal access token:
 The token is stored only in that browser (localStorage) and sent only to `api.github.com`. Signing out removes it.
 
 **Planned:** a one-click "Sign in with GitHub" (OAuth). That needs a tiny token-exchange service, such as a Cloudflare Worker, because GitHub's OAuth endpoints can't be called from a static page.
+
+## Live collaboration (no GitHub account needed)
+
+Share any file to **Google Docs / Sheets** (all file types) or **Word / Excel for the web** (`.docx`, `.xlsx`) with **Anyone with the link** (no sign-in) or **Only people I invite**. Collaborators edit there in real time. The **Live** tab shows new edits, who made them, and Google Docs comments, which can become Notes. **Bring changes back** opens their edits in the side-by-side view to save as a version. **Update live copy** sends your newer text; **Stop sharing** removes access.
+
+One-time setup: a free Google client ID and/or Microsoft app registration, in `src/config.js` or in Settings › Connections. See **`docs/live-collaboration-setup.md`**.
 
 ## How Writer's Box maps onto GitHub
 
@@ -58,14 +65,20 @@ writers-box/
 │   ├── engine.js       ← zip, Word adapter, Myers diff, IndexedDB storage, local version model
 │   ├── ui.js           ← icons, format adapters (HTML/ODT/Excel/CSV/ODS), core views, import/export
 │   ├── github.js       ← GitHub API client, sign-in, sync, publish, open, remote save/branch/tag
+│   ├── config.js       ← site settings: Google / Microsoft client IDs for live collaboration
 │   ├── collab.js       ← home, profile, reviews, notes, insights, line history, settings
+│   ├── live.js         ← live collaboration via Google Drive and OneDrive (share, status, bring back, comments)
 │   └── main.js         ← boot and routing
 ├── tests/
 │   ├── test_app.py     ← local-mode browser tests (15 checks)
 │   ├── test_github.py  ← GitHub-mode tests against a mock GitHub API (26 checks)
 │   ├── mock_github.js  ← in-memory stand-in for the GitHub REST API
+│   ├── test_live.py    ← live-collaboration tests against mock Google and Microsoft APIs (17 checks)
+│   ├── mock_live.js    ← in-memory stand-ins for Google Drive/sign-in and Microsoft Graph/sign-in
 │   └── screenshots/    ← written by the tests (git-ignored)
-└── docs/overview.md    ← decisions, vocabulary, roadmap
+└── docs/
+    ├── overview.md     ← decisions, vocabulary, roadmap
+    └── live-collaboration-setup.md ← Google / Microsoft one-time setup
 ```
 
 Edit files in `src/`, then run `./build.sh` (in VS Code's terminal, Ctrl+`) to rebuild `index.html`.
@@ -75,7 +88,7 @@ Edit files in `src/`, then run `./build.sh` (in VS Code's terminal, Ctrl+`) to r
 ```bash
 pip install playwright openpyxl
 python -m playwright install chromium
-./build.sh && python3 tests/test_app.py && python3 tests/test_github.py
+./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py
 ```
 
 The GitHub tests run every flow against `tests/mock_github.js`, so they need no account or network:
