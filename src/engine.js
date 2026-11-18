@@ -276,8 +276,8 @@ function changedPaths(p) {
   return [...all].sort().map(path => ({ path, status: fileStatus(p, path) })).filter(f => f.status && f.status !== "clean");
 }
 async function blobFor(p, f) {
-  const h = (await sha((f.orig || "") + "\u0000" + f.text)).slice(0, 20);
-  if (!p.blobs[h]) p.blobs[h] = { text: f.text, orig: f.orig || null };
+  const h = (await sha((f.orig || "") + "\u0000" + f.text + (f.base && !f.orig ? "\u0000" + f.base.length + f.base.slice(0, 64) : ""))).slice(0, 20);
+  if (!p.blobs[h]) p.blobs[h] = { text: f.text, orig: f.orig || null, ...(f.base && !f.orig ? { base: f.base } : {}) };
   return h;
 }
 async function saveVersion(p, message, time = Date.now(), extra = {}) {
@@ -290,7 +290,7 @@ async function saveVersion(p, message, time = Date.now(), extra = {}) {
 }
 function loadWorking(p, vid) {
   const tree = treeOf(p, vid); p.working = {};
-  for (const [path, h] of Object.entries(tree)) p.working[path] = { text: p.blobs[h].text, orig: p.blobs[h].orig || null };
+  for (const [path, h] of Object.entries(tree)) p.working[path] = { text: p.blobs[h].text, orig: p.blobs[h].orig || null, ...(p.blobs[h].base ? { base: p.blobs[h].base } : {}) };
 }
 function ancestors(p, vid) {
   const seen = new Set(), stack = vid ? [vid] : [];
@@ -309,7 +309,8 @@ function versionStat(p, vid) {
   return { ins, del, files };
 }
 async function bytesOf(p, path, f) {
-  if (kindOf(path) === "docx") return f.orig ? b64.to(f.orig) : textToDocx(f.text);
+  // An edited Word file keeps its original as a base: only the paragraphs that changed are rewritten.
+  if (kindOf(path) === "docx") { if (f.orig) return b64.to(f.orig); if (f.base) { try { return await docxPatch(b64.to(f.base), f.text); } catch (e) { /* plain fallback */ } } return textToDocx(f.text); }
   if (kindOf(path) === "sheet") return f.orig ? b64.to(f.orig) : sheetBytes(path, f.text);
   return enc.encode(f.text);
 }

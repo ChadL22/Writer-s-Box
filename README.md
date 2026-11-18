@@ -85,6 +85,17 @@ Connect OpenRouter in **Settings › Connections** (one-click sign-in on the hos
 - Limits show as progress bars in the editor and sections panel, as **Over limit** / **Under minimum** labels in the file list, as a warning when saving (saving isn't blocked), and in the Format checklist.
 - Word files are counted paragraph by paragraph; their headings count as body text for now.
 
+## Sync: pull and push
+
+The **Sync** button (top right of every project) pulls changes made elsewhere into Writer's Box and pushes your Writer's Box text out. Pulled changes arrive as unsaved edits, shown side by side, so you review them before saving a version. If a file changed in both places, edits to different paragraphs are combined automatically; for paragraphs changed in both, you choose which to keep (or keep both, marked).
+
+- **Your computer:** link a Writer's Box file to the Word or LaTeX file you keep working on, or link a whole folder. In Chrome and Edge on the hosted site, Pull and Push read and write the file directly, and Push warns you if the file changed since you last synced. In other browsers (and Claude's preview), Pull asks you to choose the file and Push downloads it to save over the original.
+- **Word files keep their formatting:** after you edit a Word file's text, downloads and pushes rewrite only the paragraphs you changed, in their own paragraph style. Everything else in the file is left as it was.
+- **Google Docs and Word online:** pull collaborators' edits from live documents, or push your latest text to them.
+- **GitHub:** Pull brings in new versions; Push saves your changes as a version, which goes to GitHub.
+- **Overleaf:** two-way through Overleaf's GitHub sync (link the Overleaf project to the same repository), or without GitHub by pulling an Overleaf source download (.zip) and pushing a .zip of changed LaTeX files to upload.
+- A bar above each linked file shows where it's linked, with Pull and Push buttons.
+
 ## How Writer's Box maps onto GitHub
 
 | Writer's Box | GitHub |
@@ -118,6 +129,7 @@ writers-box/
 │   ├── format.js       ← formatting styles, Word export, LaTeX preamble, checklist, style import, structure copy
 │   ├── counts.js       ← word and character counts, what counts, limits, live counter
 │   ├── sections.js     ← splitting documents into section files, sections panel, assembling
+│   ├── sync.js         ← pull and push with your computer, live documents, GitHub and Overleaf; three-way merge; Word patching
 │   └── main.js         ← boot and routing
 ├── tests/
 │   ├── test_app.py     ← local-mode browser tests (15 checks)
@@ -125,6 +137,7 @@ writers-box/
 │   ├── mock_github.js  ← in-memory stand-in for the GitHub REST API
 │   ├── test_refs.py    ← references tests: BibTeX engine, import/export, citing (45 checks)
 │   ├── test_format.py  ← styles, Word output (python-docx + LibreOffice), LaTeX, style import, structure, OpenRouter (63 checks)
+│   ├── test_sync.py    ← merge, Word formatting kept, file and folder links, conflicts, Overleaf, Sync panel (29 checks)
 │   ├── test_preview.py ← Preview shows a formatted page; Write uses a writing font (16 checks)
 │   ├── test_reload.py  ← refreshing keeps your project and screen (8 checks)
 │   ├── test_counts.py  ← counting rules, selection counts, limits and warnings (27 checks)
@@ -144,7 +157,7 @@ Edit files in `src/`, then run `./build.sh` (in VS Code's terminal, Ctrl+`) to r
 ```bash
 pip install playwright openpyxl
 python -m playwright install chromium
-./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py && python3 tests/test_format.py && python3 tests/test_counts.py && python3 tests/test_reload.py && python3 tests/test_preview.py
+./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py && python3 tests/test_format.py && python3 tests/test_counts.py && python3 tests/test_reload.py && python3 tests/test_preview.py && python3 tests/test_sync.py
 ```
 
 The GitHub tests run every flow against `tests/mock_github.js`, so they need no account or network:

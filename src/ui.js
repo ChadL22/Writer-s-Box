@@ -9,6 +9,8 @@ const P_ = {
   fileBib: PAGE + '<path d="M5.75 7.5h1.5V9L6.5 11M8.75 7.5h1.5V9L9.5 11"/>',
   fileSheet: PAGE + '<path d="M5.75 6.75h4.5v6h-4.5zM5.75 9.75h4.5M8 6.75v6"/>',
   fileMd: PAGE + '<path d="M7 7l-.5 5.25M9.5 7 9 12.25M5.5 8.75h5M5.25 10.75h5"/>',
+  cloud: '<path d="M4.5 12.75h7.25a3 3 0 0 0 .4-5.97A4.25 4.25 0 0 0 3.9 7.5a2.63 2.63 0 0 0 .6 5.25z"/>',
+  sync: '<path d="M13.25 6.5A5.25 5.25 0 0 0 3.6 4.4M2.75 9.5a5.25 5.25 0 0 0 9.65 2.1M3.25 1.75v2.9h2.9M12.75 14.25v-2.9h-2.9"/>',
   folder: '<path d="M1.75 3.25h4.5l1.5 1.5h6.5v8.5H1.75z"/>',
   /* project = an open book; manuscript = the working pages */
   book: '<path d="M1.75 2.75h4a2.25 2.25 0 0 1 2.25 2.25v8.25a1.5 1.5 0 0 0-1.5-1.5h-4.75z"/><path d="M14.25 2.75h-4A2.25 2.25 0 0 0 8 5v8.25a1.5 1.5 0 0 1 1.5-1.5h4.75z"/>',
@@ -378,11 +380,11 @@ function renderRepoHead() {
   const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["refs", "quote", "References", refCount(p) || ""], ["format", "format", "Format", ""], ["live", "people", "Live", Object.keys(p.live || {}).length || ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
   el.innerHTML = `<div class="repotitle">${ic("book")}<span class="owner">${esc(remote ? p.remote.owner : "local")}</span><span class="muted">/</span><strong>${esc(remote ? p.remote.repo : p.name)}</strong>
       <span class="label">${remote ? (p.remote.private ? "Private" : "Public") : "Stored on this device"}</span><span class="grow"></span>
-      ${remote ? `<span class="muted" style="font-size:12px">${p.remote.syncedAt ? "Synced " + ago(p.remote.syncedAt) : "Not synced yet"}</span><button class="btn btn-sm" id="r-sync" ${ghSignedIn() ? "" : 'title="Sign in to sync"'}>${ic("undo")} Sync</button><a class="btn btn-sm" href="${esc(p.remote.htmlUrl || `https://github.com/${p.remote.owner}/${p.remote.repo}`)}" target="_blank" rel="noopener">View on GitHub</a>`
-        : `<button class="btn btn-sm" id="r-pub">${ic("import")} Publish to GitHub</button>`}</div>
+      ${remote ? `<span class="muted" style="font-size:12px">${p.remote.syncedAt ? "Synced " + ago(p.remote.syncedAt) : "Not synced yet"}</span><button class="btn btn-sm" id="r-sync" title="Pull and push changes with GitHub, your computer, Google Docs, Word online and Overleaf">${ic("sync")} Sync${syncSummary(p) ? ` <span class="counter">${syncSummary(p)}</span>` : ""}</button><a class="btn btn-sm" href="${esc(p.remote.htmlUrl || `https://github.com/${p.remote.owner}/${p.remote.repo}`)}" target="_blank" rel="noopener">View on GitHub</a>`
+        : `<button class="btn btn-sm" id="r-sync" title="Pull and push changes with your computer, Google Docs, Word online, Overleaf and GitHub">${ic("sync")} Sync${syncSummary(p) ? ` <span class="counter">${syncSummary(p)}</span>` : ""}</button><button class="btn btn-sm" id="r-pub">${ic("import")} Publish to GitHub</button>`}</div>
     <nav class="unav" aria-label="Project">${tabs.map(([k, i, l, n]) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ""}><span class="in">${ic(i)}${l}${n !== "" ? ` <span class="counter">${n}</span>` : ""}</span></button>`).join("")}</nav>`;
   el.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
-  const sy = $("#r-sync"); if (sy) sy.onclick = () => syncFlow(p);
+  const sy = $("#r-sync"); if (sy) sy.onclick = () => syncFlowPanel(p);
   const pb = $("#r-pub"); if (pb) pb.onclick = () => ghSignedIn() ? publishFlow(p) : signInFlow();
 }
 function resetSel() { S.dir = ""; S.file = null; S.vid = null; S.cmp = { a: null, b: null }; S.importLog = null; S.num = null; S.revTab = null; S.noteLabel = null; }
@@ -503,6 +505,7 @@ function viewFile(p, el) {
     ${liveOf(p, path) ? `<div class="flash info live-flash">${ic("people")}<span>Live in <strong>${esc(liveTarget(liveOf(p, path).provider, path))}</strong> · <span data-lst>${liveOf(p, path).lastSeen ? liveStateHtml(liveOf(p, path)) : "shared " + ago(liveOf(p, path).sharedAt)}</span></span><span class="grow"></span><button class="btn btn-sm btn-primary" data-lback>${ic("import")} Bring changes back</button><a class="btn btn-sm" href="${esc(liveOf(p, path).url)}" target="_blank" rel="noopener">Open</a></div>` : ""}
     ${docx || sheet ? `<div class="flash info" id="docx-note">${ic("info")}<span>${noteFor(path, f)}</span></div>` : ""}
     ${sectionsBar(p, path)}
+    ${sourceBar(p, path)}
     <div class="Box">
       <div class="Box-header blob-head">
         <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write" title="${sheet ? "Edit the cells" : "Edit your writing"}">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview" title="${sheet ? "See the sheet as text" : "See it as a reader will, on a page"}">${sheet ? "As text" : `${ic("eye")} Preview`}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="See which version, and who, last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Who wrote what</button></div>
@@ -533,7 +536,7 @@ function viewFile(p, el) {
     afterEdit();
   });
   function afterEdit() {
-    if ((docx || sheet) && f.orig) { f.orig = null; const n = $("#docx-note span"); if (n) n.textContent = noteFor(path, f); }
+    if ((docx || sheet) && f.orig) { if (docx) f.base = f.orig; f.orig = null; const n = $("#docx-note span"); if (n) n.textContent = noteFor(path, f); }
     $("#f-meta").textContent = metaText();
     $("#f-status").innerHTML = statusLabel(fileStatus(p, path));
     persist(p); renderRepoHead();
@@ -547,7 +550,7 @@ function viewFile(p, el) {
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-live").onclick = () => shareLiveFlow(p, path);
-  bindSections(p, path, el);
+  bindSections(p, path, el); bindSourceBar(p, path, el);
   const sb = $("#f-sec"); if (sb) sb.onclick = () => sectionsFlow(p, path);
   const ct = $("#f-cite"); if (ct) ct.onclick = () => citeFlow(p, path, $("#ed"));
   if (ta && S.citeCaret != null) { ta.focus(); ta.setSelectionRange(S.citeCaret, S.citeCaret); S.citeCaret = null; }
@@ -572,7 +575,8 @@ function noteFor(path, f) {
     ? "Spreadsheet: values and formulas are versioned cell by cell, one row at a time. The original file, with its formatting and charts, is kept until you edit."
     : "Edited spreadsheet: downloads rebuild the workbook with values and formulas only. Earlier versions keep their original files.";
   return f.orig ? "Word document. Write edits the words, one paragraph per line; Preview shows it on a page. Your Word formatting is kept until you change the text."
-    : "You've edited the words of this Word document. Downloading it gives a plain Word file; for APA, MLA or another style, use Format. Earlier versions keep the original file.";
+    : f.base ? "You've edited the words of this Word document. Its formatting is kept: downloads and pushes rewrite only the paragraphs you changed, in their own paragraph style."
+    : "You've edited the words of this Word document. Downloading gives a plain Word file; for APA, MLA or another style, use Format.";
 }
 function sheetGrid(p, path, f, mount, onEdit) {
   const sheets = textToSheets(f.text);
