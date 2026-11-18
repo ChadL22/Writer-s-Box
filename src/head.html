@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Writer's Box</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='108 100 260 266'%3E%3Cstyle%3Epath%7Bfill:%2324292f%7D@media (prefers-color-scheme:dark)%7Bpath%7Bfill:%23fff%7D%7D%3C/style%3E%3Cpath d='M132 140 264 112 355 177 203 212z'/%3E%3Cpath d='M118 147 196 214v44L118 191z'/%3E%3Cpath d='M206 217 357 181v41L206 258z'/%3E%3Cpath d='M130 213 197 271v86L130 299z'/%3E%3Cpath d='M207 271 342 238v80L207 357z'/%3E%3C/svg%3E">
 <style>
 /* Layout idea: a code-hosting interface for prose — dark global header, repository header with underline tabs, boxed lists, diff tables. */
 :root {
@@ -77,6 +78,7 @@ svg.oc.solid { fill: currentColor; }
 .gh { background: var(--header-bg); color: var(--header-fg); padding: 12px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .gh .mark { display: flex; align-items: center; gap: 8px; color: var(--header-fg); font-weight: 600; font-size: 15px; }
 .gh .mark svg { width: 28px; height: 28px; }
+.gh .mark svg.logo { color: var(--logo, var(--header-fg)); width: 26px; height: 26px; }
 .gh .crumbs { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--header-muted); }
 .gh .crumbs strong { color: var(--header-fg); font-weight: 600; }
 .gh .grow { flex: 1; }
@@ -507,6 +509,17 @@ ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column;
 .ct-list { max-height: 320px; overflow: auto; margin-top: 8px; }
 .ct-list .Box-row { cursor: pointer; align-items: flex-start; }
 .ct-list .Box-row[hidden] { display: none; }
+/* Sections */
+.sec-toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--fg); }
+.sec-list { list-style: none; margin: 0; padding: 0; }
+.sec-list .Box-row { gap: 10px; }
+.sec-n { flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--canvas-subtle); border: 1px solid var(--border); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+.sec-title { font-weight: 600; color: var(--fg); text-align: left; }
+.sec-path { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-nav .Box-row { gap: 8px; }
+.sec-plan { max-height: 300px; overflow: auto; }
+.sec-plan .Box-row { gap: 10px; }
+.btn-octicon[disabled] { opacity: .35; cursor: default; }
 </style>
 </head>
 <body>

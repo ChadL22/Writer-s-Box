@@ -13,12 +13,15 @@ function autoSync() { const p = P(); if (p && isRemote(p) && ghSignedIn() && !au
   S.pid = S.projects[0].id; resetSel();
   const h = location.hash.slice(1);
   S.route = ROUTES.includes(h) ? h : "home";
+  // Start history at Home, so Back from any screen you land on stays in Writer's Box.
+  try { const want = S.route; S.route = "home"; history.replaceState(navState(), "", "#home"); S.route = want; if (want !== "home") history.pushState(navState(), "", navHash()); } catch (e) { /* ignore */ }
+  window.addEventListener("popstate", onNavPop);
   render();
   if (GH.token) {
     try { GH.user = await gh("/user"); render(); autoSync(); }
     catch (e) { if (e.status === 401) { ghSignOut(); toast("Your GitHub sign-in expired. Sign in again to sync."); } render(); }
   }
-  window.addEventListener("hashchange", () => { const v = location.hash.slice(1); const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route; if (ROUTES.includes(v) && v !== tab) { S.route = v; render(); } });
+  window.addEventListener("hashchange", () => { if (history.state && history.state.route) return; const v = location.hash.slice(1); if (ROUTES.includes(v)) go(v, {}, true); });
 })();
 </script>
 </body>

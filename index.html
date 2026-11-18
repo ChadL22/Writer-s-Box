@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Writer's Box</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='108 100 260 266'%3E%3Cstyle%3Epath%7Bfill:%2324292f%7D@media (prefers-color-scheme:dark)%7Bpath%7Bfill:%23fff%7D%7D%3C/style%3E%3Cpath d='M132 140 264 112 355 177 203 212z'/%3E%3Cpath d='M118 147 196 214v44L118 191z'/%3E%3Cpath d='M206 217 357 181v41L206 258z'/%3E%3Cpath d='M130 213 197 271v86L130 299z'/%3E%3Cpath d='M207 271 342 238v80L207 357z'/%3E%3C/svg%3E">
 <style>
 /* Layout idea: a code-hosting interface for prose — dark global header, repository header with underline tabs, boxed lists, diff tables. */
 :root {
@@ -77,6 +78,7 @@ svg.oc.solid { fill: currentColor; }
 .gh { background: var(--header-bg); color: var(--header-fg); padding: 12px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .gh .mark { display: flex; align-items: center; gap: 8px; color: var(--header-fg); font-weight: 600; font-size: 15px; }
 .gh .mark svg { width: 28px; height: 28px; }
+.gh .mark svg.logo { color: var(--logo, var(--header-fg)); width: 26px; height: 26px; }
 .gh .crumbs { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--header-muted); }
 .gh .crumbs strong { color: var(--header-fg); font-weight: 600; }
 .gh .grow { flex: 1; }
@@ -507,6 +509,17 @@ ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column;
 .ct-list { max-height: 320px; overflow: auto; margin-top: 8px; }
 .ct-list .Box-row { cursor: pointer; align-items: flex-start; }
 .ct-list .Box-row[hidden] { display: none; }
+/* Sections */
+.sec-toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--fg); }
+.sec-list { list-style: none; margin: 0; padding: 0; }
+.sec-list .Box-row { gap: 10px; }
+.sec-n { flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--canvas-subtle); border: 1px solid var(--border); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+.sec-title { font-weight: 600; color: var(--fg); text-align: left; }
+.sec-path { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-nav .Box-row { gap: 8px; }
+.sec-plan { max-height: 300px; overflow: auto; }
+.sec-plan .Box-row { gap: 10px; }
+.btn-octicon[disabled] { opacity: .35; cursor: default; }
 </style>
 </head>
 <body>
@@ -939,6 +952,10 @@ const P_ = {
   merge: '<path d="M2 1.75h4v5H2zM10 1.75h4v5h-4z"/><path d="M4 6.75v1c0 1 .75 1.75 1.75 1.75h4.5c1 0 1.75-.75 1.75-1.75v-1M8 9.5v4.75M6.5 12.75 8 14.25l1.5-1.5"/>',
   /* write = a pen nib */
   pencil: '<path d="M8 14.25 4.25 8.5 6 3.25h4l1.75 5.25z"/><path d="M8 14.25V9.5"/><circle cx="8" cy="8.25" r=".9"/><path d="M5.75 1.5h4.5"/>',
+  sections: '<path d="M3.75 2.75h8.5v3h-8.5zM3.75 6.5h8.5v3h-8.5zM3.75 10.25h8.5v3h-8.5z"/>',
+  kebab: '<circle cx="8" cy="3.5" r=".9" fill="currentColor"/><circle cx="8" cy="8" r=".9" fill="currentColor"/><circle cx="8" cy="12.5" r=".9" fill="currentColor"/>',
+  chevronUp: '<path d="M4.5 10l3.5-3.5 3.5 3.5"/>',
+  chevronDown: '<path d="M4.5 6l3.5 3.5 3.5-3.5"/>',
   quote: '<path d="M2.75 8.5h3.5v4.25H2.75zM2.75 8.5c0-2.6 1-4.4 3.25-5.25M9.75 8.5h3.5v4.25h-3.5zM9.75 8.5c0-2.6 1-4.4 3.25-5.25"/>',
   pilcrow: '<path d="M7.5 2.25v11.5M10.25 2.25v11.5M12 2.25H6.5a2.75 2.75 0 0 0 0 5.5h1"/>',
   x: '<path d="M4 4l8 8M12 4l-8 8"/>',
@@ -959,7 +976,7 @@ const P_ = {
 const ic = (name, cls = "") => `<svg class="oc ${cls}" viewBox="0 0 16 16" aria-hidden="true">${P_[name]}</svg>`;
 const ICON = { x: ic("x") };
 const fileIcon = path => ic({ LaTeX: "fileTex", BibTeX: "fileBib", Markdown: "fileMd", Word: "fileWord", Spreadsheet: "fileSheet", CSV: "fileSheet" }[typeLabel(path)] || "file");
-const LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="8" fill="currentColor"/><path d="M10 9.5h9l3 3V23H10z" fill="none" stroke="var(--header-bg)" stroke-width="2" stroke-linejoin="round"/><path d="M13 15h6M13 18.5h4" stroke="var(--header-bg)" stroke-width="2" stroke-linecap="round"/></svg>`;
+const LOGO = `<svg class="logo" viewBox="108 100 260 266" aria-hidden="true" fill="currentColor"><path d="M132 140 264 112 355 177 203 212z"/><path d="M118 147 196 214v44L118 191z"/><path d="M206 217 357 181v41L206 258z"/><path d="M130 213 197 271v86L130 299z"/><path d="M207 271 342 238v80L207 357z"/></svg>`;
 const TYPE_COLOR = { Spreadsheet: "#0f7b6c", CSV: "#52a37a", LaTeX: "#3d6117", BibTeX: "#778899", Markdown: "#083fa1", Word: "#2b6cb0", Text: "#9198a1" };
 
 /* ============ Extra format adapters ============ */
@@ -1233,11 +1250,22 @@ function diffstatBlocks(ins, del) {
   const a = Math.round(5 * ins / tot), d = Math.min(5 - a, Math.round(5 * del / tot));
   return `<span class="diffstat">${"<i class='a'></i>".repeat(a)}${"<i class='d'></i>".repeat(d)}${"<i></i>".repeat(5 - a - d)}</span>`;
 }
-function go(route, extra = {}) {
+/* Browser history: every screen change is a history entry, so Back and Forward move through Writer's Box. */
+const NAV_KEYS = ["route", "pid", "file", "dir", "vid", "cmp", "num", "fileMode"];
+const navState = () => Object.fromEntries(NAV_KEYS.map(k => [k, S[k] === undefined ? null : JSON.parse(JSON.stringify(S[k]))]));
+const navHash = () => "#" + ({ file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route);
+function go(route, extra = {}, replace = false) {
+  const before = JSON.stringify(navState());
   Object.assign(S, extra); S.route = route;
-  const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[route] || route;
-  try { history.replaceState(null, "", "#" + tab); } catch (e) { /* ignore */ }
-  render(); window.scrollTo(0, 0);
+  const st = navState();
+  try { if (replace || JSON.stringify(st) === before) history.replaceState(st, "", navHash()); else history.pushState(st, "", navHash()); } catch (e) { /* ignore */ }
+  render(); if (!replace) window.scrollTo(0, 0);
+}
+function onNavPop(e) {
+  const st = e.state; if (!st || !st.route) return;
+  document.querySelectorAll("#layer .overlay").forEach(o => { const x = o.querySelector("[data-x]"); if (x) x.click(); else o.remove(); });
+  if (st.pid && !S.projects.some(x => x.id === st.pid)) return;
+  Object.assign(S, st); render();
 }
 
 /* ============ Shell ============ */
@@ -1341,7 +1369,7 @@ function viewFiles(p, el) {
         ${all.length ? `<table class="ftable"><tbody>
           ${S.dir ? `<tr><td class="ic">${ic("up")}</td><td class="nm" colspan="3"><button class="link" data-dir="${esc(S.dir.split("/").slice(0, -1).join("/"))}">..</button></td></tr>` : ""}
           ${[...folders.keys()].sort().map(f => row(ic("folder", "solid folder"), f, `data-dir="${esc(pre + f)}"`, touchOf(folders.get(f)), folders.get(f).some(x => fileStatus(p, x) !== "clean") ? `<span class="label label-attention">Changes</span>` : "")).join("")}
-          ${files.map(path => { const st = fileStatus(p, path); return row(fileIcon(path), path.slice(pre.length), `data-file="${esc(path)}"`, lt[path], statusLabel(st), st === "deleted" ? "del" : ""); }).join("")}
+          ${files.map(path => { const st = fileStatus(p, path); return row(fileIcon(path), path.slice(pre.length), `data-file="${esc(path)}"`, lt[path], (secFmt(path) && p.working[path] && secIncludes(p, path).length ? `<span class="label" title="Made of section files">${ic("sections")} ${secIncludes(p, path).length} sections</span> ` : "") + statusLabel(st), st === "deleted" ? "del" : ""); }).join("")}
         </tbody></table>` : `<div class="blankslate">${ic("import")}<h3>Bring in your writing</h3><p class="muted">Import Google Docs, Word files or a LaTeX project, or start a new file.</p><div class="row"><button class="btn btn-primary" data-tab="import">Import documents</button></div></div>`}
       </div>
     </div>
@@ -1380,9 +1408,10 @@ function viewFile(p, el) {
   if (!f) return go("files");
   const parts = path.split("/"), st = fileStatus(p, path), lt = lastTouch(p)[path], docx = kindOf(path) === "docx", sheet = kindOf(path) === "sheet";
   const mode = S.fileMode || "write";
-  const lines = f.text.split("\n");
+  const secInc = secFmt(path) ? secIncludes(p, path) : [];
+  const lines = (mode === "preview" && secInc.length ? assemble(p, path) : f.text).split("\n");
   const dlOpts = sheet ? [["orig", `Original (.${extOf(path)})`], ...(extOf(path) !== "xlsx" ? [["xlsx", "As Excel (.xlsx)"]] : []), ["csvs", "As CSV (.csv)"]]
-    : [["orig", `Original (.${extOf(path)})`], ...(["md", "markdown", "txt"].includes(extOf(path)) ? [["docx", "As Word (.docx)"]] : []), ...(extOf(path) !== "txt" ? [["txt", "As plain text (.txt)"]] : [])];
+    : [["orig", `Original (.${extOf(path)})`], ...(["md", "markdown", "txt"].includes(extOf(path)) ? [["docx", "As Word (.docx)"]] : []), ...(extOf(path) !== "txt" ? [["txt", "As plain text (.txt)"]] : []), ...(secInc.length ? [["combined", "Whole document, sections combined"]] : [])];
   const metaText = () => sheet ? sheetSummary(f.text) : `${f.text.split("\n").length} ${docx ? "paragraphs" : "lines"} · ${wordCount(f.text).toLocaleString()} words`;
   el.innerHTML = `
     ${unsavedFlash(p)}
@@ -1392,12 +1421,14 @@ function viewFile(p, el) {
       <button class="btn btn-sm" data-tab="history">${ic("history")} History</button></div></div>
     ${liveOf(p, path) ? `<div class="flash info live-flash">${ic("people")}<span>Live in <strong>${esc(liveTarget(liveOf(p, path).provider, path))}</strong> · <span data-lst>${liveOf(p, path).lastSeen ? liveStateHtml(liveOf(p, path)) : "shared " + ago(liveOf(p, path).sharedAt)}</span></span><span class="grow"></span><button class="btn btn-sm btn-primary" data-lback>${ic("import")} Bring changes back</button><a class="btn btn-sm" href="${esc(liveOf(p, path).url)}" target="_blank" rel="noopener">Open</a></div>` : ""}
     ${docx || sheet ? `<div class="flash info" id="docx-note">${ic("info")}<span>${noteFor(path, f)}</span></div>` : ""}
+    ${sectionsBar(p, path)}
     <div class="Box">
       <div class="Box-header blob-head">
         <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview">${sheet ? "As text" : "Preview"}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="Which version last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Line history</button></div>
         <span class="muted" id="f-meta">${metaText()}</span>
         <span class="label">${typeLabel(path)}</span><span id="f-status">${statusLabel(st)}</span>
         <span class="grow"></span>
+        ${secFmt(path) && !secInc.length ? `<button class="btn btn-sm" id="f-sec" title="Split this document into section files">${ic("sections")} Sections</button>` : ""}
         ${mode === "write" && !sheet ? `<button class="btn btn-sm" id="f-cite" title="Insert a citation at the cursor">${ic("quote")} Cite</button>` : ""}
         <button class="btn btn-sm" id="f-live">${ic("people")} ${liveOf(p, path) ? "Live" : "Collaborate live"}</button>
         <button class="btn btn-sm" id="f-cmp">${ic("compare")} Changes</button>
@@ -1432,6 +1463,8 @@ function viewFile(p, el) {
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-live").onclick = () => shareLiveFlow(p, path);
+  bindSections(p, path, el);
+  const sb = $("#f-sec"); if (sb) sb.onclick = () => sectionsFlow(p, path);
   const ct = $("#f-cite"); if (ct) ct.onclick = () => citeFlow(p, path, $("#ed"));
   if (ta && S.citeCaret != null) { ta.focus(); ta.setSelectionRange(S.citeCaret, S.citeCaret); S.citeCaret = null; }
   const lb = el.querySelector("[data-lback]"); if (lb) lb.onclick = () => bringBackFlow(p, path);
@@ -1965,7 +1998,8 @@ function pasteCellsFlow(p) {
 /* ============ Downloads ============ */
 async function downloadAs(p, path, how) {
   const f = p.working[path]; const base = path.split("/").pop(), stem = base.replace(/\.[^.]+$/, "");
-  if (how === "docx") return offerFile(stem + ".docx", mdToDocx(f.text));
+  if (how === "combined") { const t = assemble(p, path); return offerFile(base, t, t); }
+  if (how === "docx") return offerFile(stem + ".docx", mdToDocx(secFmt(path) ? assemble(p, path) : f.text));
   if (how === "txt") return offerFile(stem + ".txt", f.text, f.text);
   if (how === "xlsx") return offerFile(stem + ".xlsx", xlsxFromText(f.text));
   if (how === "csvs") {
@@ -3798,6 +3832,219 @@ function citeFlow(p, path, textarea) {
   });
 }
 
+/* ============ Sections: split a document into section files ============
+   A sectioned document is a main file that pulls its sections in, in order:
+     LaTeX     \input{memo/introduction}            (standard LaTeX, so it still compiles and works in Overleaf)
+     Markdown  <!-- include: memo/introduction.md -->  (an HTML comment, invisible in Markdown viewers)
+   Each section is an ordinary file, so it has its own history, line history, reviews and live sharing. */
+const secFmt = path => { const e = extOf(path); return e === "tex" ? "tex" : e === "md" || e === "markdown" ? "md" : null; };
+const dirOf = path => path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
+const stemOf = path => path.split("/").pop().replace(/\.[^.]+$/, "");
+const TEX_RANK = { part: 0, chapter: 1, section: 2, subsection: 3, subsubsection: 4 };
+const TEX_INC = /^\s*\\(?:input|include|subfile)\{([^}]+)\}/, MD_INC = /^\s*<!--\s*include:\s*(.+?)\s*-->\s*$/;
+const TEX_TAIL = /^\s*\\(?:bibliography(?:style)?\{|printbibliography|end\{document\})/;
+
+function normPath(path) { const out = []; for (const s of path.split("/")) { if (s === "..") out.pop(); else if (s && s !== ".") out.push(s); } return out.join("/"); }
+function incTarget(main, arg, fmt) { let a = arg.trim(); if (fmt === "tex" && !/\.\w+$/.test(a)) a += ".tex"; return normPath(dirOf(main) + a); }
+function incArg(main, target, fmt) {
+  const from = dirOf(main).split("/").filter(Boolean), to = target.split("/");
+  let i = 0; while (i < from.length && i < to.length - 1 && from[i] === to[i]) i++;
+  const rel = [...from.slice(i).map(() => ".."), ...to.slice(i)].join("/");
+  return fmt === "tex" ? rel.replace(/\.tex$/, "") : rel;
+}
+const incLine = (main, target, fmt) => fmt === "tex" ? `\\input{${incArg(main, target, fmt)}}` : `<!-- include: ${incArg(main, target, fmt)} -->`;
+
+/* Sections a main file pulls in: [{ line, path, exists }] */
+function secIncludes(p, main) {
+  const fmt = secFmt(main), f = p.working[main]; if (!fmt || !f) return [];
+  const out = [];
+  f.text.split("\n").forEach((l, i) => { if (fmt === "tex" && /^\s*%/.test(l)) return; const m = (fmt === "tex" ? TEX_INC : MD_INC).exec(l); if (m) { const path = incTarget(main, m[1], fmt); out.push({ line: i, path, exists: !!p.working[path] }); } });
+  return out;
+}
+/* Main files that pull in this file */
+function secParents(p, path) { return Object.keys(p.working).filter(m => m !== path && secFmt(m) && secIncludes(p, m).some(s => s.path === path)); }
+
+function balanced(s, i) { let d = 0; for (let j = i; j < s.length; j++) { if (s[j] === "{") d++; else if (s[j] === "}" && --d === 0) return s.slice(i + 1, j); } return s.slice(i + 1); }
+/* Headings in a file: [{ line, rank, title }] (rank 0 = largest) */
+function secHeadings(text, fmt) {
+  const out = []; let fence = false, front = false;
+  text.split("\n").forEach((l, i) => {
+    if (fmt === "md") {
+      if (i === 0 && l.trim() === "---") { front = true; return; }
+      if (front) { if (/^(---|\.\.\.)\s*$/.test(l)) front = false; return; }
+      if (/^\s*(```|~~~)/.test(l)) { fence = !fence; return; }
+      if (fence) return;
+      const m = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(l); if (m) out.push({ line: i, rank: m[1].length, title: m[2] });
+    } else {
+      const m = /^\s*\\(part|chapter|section|subsection|subsubsection)\*?\s*(\[[^\]]*\])?\s*\{/.exec(l);
+      if (m) out.push({ line: i, rank: TEX_RANK[m[1]], title: texText(balanced(l, m[0].length - 1)).trim() });
+    }
+  });
+  return out;
+}
+const rankName = (fmt, r) => fmt === "md" ? `${"#".repeat(r)} headings` : Object.keys(TEX_RANK).find(k => TEX_RANK[k] === r).replace(/^./, c => c.toUpperCase()) + "s";
+function secTitle(p, path) { const f = p.working[path], fmt = secFmt(path); if (!f) return stemOf(path); const h = fmt ? secHeadings(f.text, fmt)[0] : null; return h ? h.title : stemOf(path).replace(/[-_]+/g, " ").replace(/^./, c => c.toUpperCase()); }
+
+function freePath(p, want, taken) { let q = want, n = 2; while (p.working[q] || taken.has(q)) q = want.replace(/(\.\w+)$/, `-${n++}$1`); taken.add(q); return q; }
+
+/* Plan a split at headings of `rank` or larger. Returns { head, tail, chunks: [{ title, path, text }] } */
+function planSplit(p, main, rank, folder) {
+  const fmt = secFmt(main), lines = p.working[main].text.split("\n");
+  const hs = secHeadings(lines.join("\n"), fmt).filter(h => h.rank <= rank);
+  if (!hs.length) return null;
+  let end = lines.length;
+  if (fmt === "tex") { for (let i = hs[hs.length - 1].line + 1; i < lines.length; i++) if (TEX_TAIL.test(lines[i])) { end = i; break; } }
+  const ext = fmt === "tex" ? ".tex" : "." + extOf(main), taken = new Set(), dir = normPath(dirOf(main) + folder.replace(/^\/+|\/+$/g, ""));
+  const chunks = hs.map((h, k) => {
+    const to = k + 1 < hs.length ? hs[k + 1].line : end;
+    const body = lines.slice(h.line, to); while (body.length && !body[body.length - 1].trim()) body.pop();
+    return { title: h.title, path: freePath(p, (dir ? dir + "/" : "") + (slug(h.title) || "section") + ext, taken), text: body.join("\n") + "\n" };
+  });
+  const head = lines.slice(0, hs[0].line); while (head.length && !head[head.length - 1].trim()) head.pop();
+  return { head, tail: lines.slice(end), chunks, fmt };
+}
+function applySplit(p, main, plan) {
+  for (const c of plan.chunks) p.working[c.path] = { text: c.text, orig: null };
+  const inc = plan.chunks.map(c => incLine(main, c.path, plan.fmt));
+  p.working[main].text = [...plan.head, ...(plan.head.length ? [""] : []), ...inc, ...(plan.tail.length ? ["", ...plan.tail] : [])].join("\n").replace(/\n*$/, "\n");
+}
+/* The whole document with sections pulled in */
+function assemble(p, main, depth = 0, seen = new Set([main])) {
+  const fmt = secFmt(main), f = p.working[main]; if (!f) return "";
+  return f.text.split("\n").map(l => {
+    const m = fmt && !(fmt === "tex" && /^\s*%/.test(l)) ? (fmt === "tex" ? TEX_INC : MD_INC).exec(l) : null;
+    if (!m) return l; const t = incTarget(main, m[1], fmt);
+    if (!p.working[t] || seen.has(t) || depth > 6) return l;
+    return assemble(p, t, depth + 1, new Set([...seen, t])).replace(/\n$/, "");
+  }).join("\n");
+}
+function secInsertAt(p, main) {
+  const incs = secIncludes(p, main), lines = p.working[main].text.split("\n");
+  if (incs.length) return incs[incs.length - 1].line + 1;
+  if (secFmt(main) === "tex") { const i = lines.findIndex(l => TEX_TAIL.test(l)); if (i >= 0) return i; }
+  let n = lines.length; while (n > 0 && !lines[n - 1].trim()) n--; return n;
+}
+
+/* ---------- Sections panel in the file view ---------- */
+function sectionsBar(p, path) {
+  const fmt = secFmt(path); if (!fmt && !secParents(p, path).length) return "";
+  const incs = fmt ? secIncludes(p, path) : [];
+  if (incs.length) {
+    const words = incs.reduce((n, s) => n + (s.exists ? wordCount(p.working[s.path].text) : 0), 0);
+    const open = S.secOpen !== false;
+    return `<div class="Box sec-box" style="margin-bottom:16px">
+      <div class="Box-header"><button class="link sec-toggle" data-sec-toggle aria-expanded="${open}">${ic("sections")} <strong>${incs.length} section${incs.length > 1 ? "s" : ""}</strong></button><span class="muted" style="font-size:12px">${words.toLocaleString()} words in sections · each section is its own file</span><span class="grow"></span><button class="btn btn-sm" data-sec-add>${ic("plus")} Add section</button><button class="btn btn-sm" data-sec-menu>${ic("kebab")}<span class="sr">More section actions</span></button></div>
+      ${open ? `<ol class="sec-list">${incs.map((s, i) => `<li class="Box-row" data-sec="${i}">
+        <span class="sec-n">${i + 1}</span>
+        <div class="grow" style="min-width:0">${s.exists ? `<button class="link sec-title" data-sec-open="${esc(s.path)}">${esc(secTitle(p, s.path))}</button>` : `<span class="sec-title">${esc(stemOf(s.path))}</span> <span class="label label-danger">File missing</span>`}<div class="muted mono sec-path">${esc(s.path)}</div></div>
+        ${s.exists ? `<span class="muted" style="font-size:12px;white-space:nowrap">${wordCount(p.working[s.path].text).toLocaleString()} words</span>${statusLabel(fileStatus(p, s.path))}` : ""}
+        <button class="btn-octicon" data-sec-up="${i}" ${i ? "" : "disabled"} title="Move up" aria-label="Move ${esc(s.path)} up">${ic("chevronUp")}</button>
+        <button class="btn-octicon" data-sec-down="${i}" ${i < incs.length - 1 ? "" : "disabled"} title="Move down" aria-label="Move ${esc(s.path)} down">${ic("chevronDown")}</button>
+        <button class="btn-octicon" data-sec-rm="${i}" title="Remove from this document" aria-label="Remove ${esc(s.path)}">${ic("x")}</button></li>`).join("")}</ol>` : ""}
+    </div>`;
+  }
+  const parents = secParents(p, path);
+  if (parents.length) {
+    const main = parents[0], incs = secIncludes(p, main).filter(s => s.exists), i = incs.findIndex(s => s.path === path);
+    const prev = incs[i - 1], next = incs[i + 1];
+    return `<div class="Box sec-nav" style="margin-bottom:16px"><div class="Box-row">${ic("sections")}<span>Section <strong>${i + 1}</strong> of ${incs.length} in <button class="link" data-sec-open="${esc(main)}">${esc(main)}</button></span><span class="grow"></span>
+      <button class="btn btn-sm" ${prev ? `data-sec-open="${esc(prev.path)}" title="${esc(secTitle(p, prev.path))}"` : "disabled"}>‹ Previous</button><button class="btn btn-sm" ${next ? `data-sec-open="${esc(next.path)}" title="${esc(secTitle(p, next.path))}"` : "disabled"}>Next ›</button></div></div>`;
+  }
+  return "";
+}
+function bindSections(p, path, el) {
+  const rerender = () => go("file", { file: path }, true);
+  el.querySelectorAll("[data-sec-open]").forEach(b => b.onclick = () => go("file", { file: b.dataset.secOpen }));
+  const tg = el.querySelector("[data-sec-toggle]"); if (tg) tg.onclick = () => { S.secOpen = S.secOpen === false; rerender(); };
+  const add = el.querySelector("[data-sec-add]"); if (add) add.onclick = () => addSectionFlow(p, path);
+  const menu = el.querySelector("[data-sec-menu]"); if (menu) menu.onclick = () => sectionsFlow(p, path);
+  const swap = (i, j) => { const incs = secIncludes(p, path), lines = p.working[path].text.split("\n"); const a = incs[i].line, b = incs[j].line; [lines[a], lines[b]] = [lines[b], lines[a]]; p.working[path].text = lines.join("\n"); persist(p, true); rerender(); };
+  el.querySelectorAll("[data-sec-up]").forEach(b => b.onclick = () => swap(+b.dataset.secUp, +b.dataset.secUp - 1));
+  el.querySelectorAll("[data-sec-down]").forEach(b => b.onclick = () => swap(+b.dataset.secDown, +b.dataset.secDown + 1));
+  el.querySelectorAll("[data-sec-rm]").forEach(b => b.onclick = async () => {
+    const s = secIncludes(p, path)[+b.dataset.secRm];
+    const v = await modal({ title: "Remove section", body: `<p>Take <strong>${esc(s.exists ? secTitle(p, s.path) : s.path)}</strong> out of ${esc(path)}?</p>${s.exists ? `<p class="muted">You can keep <span class="mono">${esc(s.path)}</span> as a separate file, or delete it. Either way, past versions keep it.</p>` : ""}`,
+      actions: [{ label: "Cancel", value: null }, ...(s.exists ? [{ label: "Delete the file too", danger: true, value: "delete" }] : []), { label: s.exists ? "Keep the file" : "Remove", primary: true, value: "keep" }] });
+    if (!v) return;
+    const lines = p.working[path].text.split("\n"); lines.splice(s.line, 1); p.working[path].text = lines.join("\n");
+    if (v === "delete" && !secParents(p, s.path).length) delete p.working[s.path];
+    persist(p, true); rerender(); toast("Section removed. Save a version to keep the change.");
+  });
+}
+
+/* ---------- Split / add / combine ---------- */
+function sectionsFlow(p, path) {
+  const fmt = secFmt(path), incs = secIncludes(p, path), hs = secHeadings(p.working[path].text, fmt);
+  const ranks = [...new Set(hs.map(h => h.rank))].sort((a, b) => a - b);
+  if (incs.length) {
+    return modal({ title: "Sections", body: `<p>${esc(path)} is made of ${incs.length} section file${incs.length > 1 ? "s" : ""}.</p>
+      <div class="Box"><div class="Box-row"><div class="grow"><strong>Download the whole document</strong><div class="muted" style="font-size:12px">One ${fmt === "tex" ? ".tex" : ".md"} file with every section pulled in</div></div><button class="btn btn-sm" data-act="dl">Download</button></div>
+      ${fmt === "md" ? `<div class="Box-row"><div class="grow"><strong>Download as Word</strong><div class="muted" style="font-size:12px">The whole document as one .docx</div></div><button class="btn btn-sm" data-act="docx">Download</button></div>` : ""}
+      ${hs.length ? `<div class="Box-row"><div class="grow"><strong>Split the rest</strong><div class="muted" style="font-size:12px">${hs.length} heading${hs.length > 1 ? "s are" : " is"} still in ${esc(path)} itself</div></div><button class="btn btn-sm" data-act="split">Split</button></div>` : ""}
+      <div class="Box-row"><div class="grow"><strong>Combine into one file</strong><div class="muted" style="font-size:12px">Put every section back into ${esc(path)} and remove the section files</div></div><button class="btn btn-sm btn-danger" data-act="combine">Combine</button></div></div>`,
+      onOpen: ov => ov.querySelectorAll("[data-act]").forEach(b => b.onclick = async () => {
+        const act = b.dataset.act; ov.querySelector("[data-x]").click();
+        if (act === "dl") { const t = assemble(p, path); return offerFile(path.split("/").pop(), t, t); }
+        if (act === "docx") return offerFile(stemOf(path) + ".docx", mdToDocx(assemble(p, path)));
+        if (act === "split") return splitFlow(p, path);
+        if (!await confirmBox("Combine sections?", `Every section will be put back into ${esc(path)}, and the ${incs.filter(s => s.exists).length} section files will be removed from the project. Past versions keep them.`, "Combine", true)) return;
+        const text = assemble(p, path); for (const s of incs) if (s.exists && secParents(p, s.path).length <= 1) delete p.working[s.path];
+        p.working[path].text = text; persist(p, true); go("file", { file: path }, true); toast("Sections combined. Save a version to keep the change.");
+      }),
+      actions: [{ label: "Close" }] });
+  }
+  if (!ranks.length) return modal({ title: "Split into sections", body: `<p>There are no headings in ${esc(path)} to split at${fmt === "tex" ? " (\\chapter, \\section or \\subsection)" : " (lines starting with #)"}.</p><p class="muted">Start a section instead: each section you add becomes its own file, and ${esc(path)} keeps them in order.</p>`,
+    actions: [{ label: "Cancel" }, { label: "Add a section", primary: true, onClick: () => { setTimeout(() => addSectionFlow(p, path)); return true; } }] });
+  return splitFlow(p, path);
+}
+function splitFlow(p, path) {
+  const fmt = secFmt(path), hs = secHeadings(p.working[path].text, fmt), ranks = [...new Set(hs.map(h => h.rank))].sort((a, b) => a - b);
+  let rank = ranks.find(r => hs.filter(h => h.rank <= r).length >= 2) ?? ranks[0];
+  let folder = dirOf(path) ? stemOf(path) : (p.working["sections"] ? stemOf(path) : stemOf(path) === "main" ? "sections" : stemOf(path));
+  modal({
+    title: "Split into sections",
+    body: `<p class="muted" style="margin-top:0">Each section becomes its own file you can open, write, review and share on its own. ${esc(path)} keeps them in order${fmt === "tex" ? " with <span class='mono'>\\input</span>, so it still compiles as before" : ""}.</p>
+      <div class="rf-grid"><label for="sp-rank">Split at<select class="form" id="sp-rank">${ranks.map(r => `<option value="${r}" ${r === rank ? "selected" : ""}>${rankName(fmt, r)} (${hs.filter(h => h.rank <= r).length} sections)</option>`).join("")}</select></label>
+      <label for="sp-dir">Folder for the sections<input type="text" id="sp-dir" value="${esc(folder)}" style="font-family:var(--mono)"></label></div>
+      <span class="side-h">Files to create</span><div class="Box sec-plan" id="sp-plan"></div>`,
+    onOpen: ov => {
+      const show = () => { rank = +$("#sp-rank", ov).value; folder = $("#sp-dir", ov).value.trim(); const plan = planSplit(p, path, rank, folder);
+        $("#sp-plan", ov).innerHTML = (plan.head.length ? `<div class="Box-row muted" style="font-size:12px">${fileIcon(path)} <span class="mono">${esc(path)}</span> keeps ${fmt === "tex" ? "the preamble and title" : "the text before the first heading"} and lists the sections</div>` : "")
+          + plan.chunks.map((c, i) => `<div class="Box-row"><span class="sec-n">${i + 1}</span><div class="grow" style="min-width:0"><strong>${esc(c.title)}</strong><div class="muted mono sec-path">${esc(c.path)}</div></div><span class="muted" style="font-size:12px">${wordCount(c.text).toLocaleString()} words</span></div>`).join(""); };
+      ov.addEventListener("input", show); ov.addEventListener("change", show); show();
+    },
+    actions: [{ label: "Cancel" }, { label: "Split into sections", primary: true, onClick: ov => {
+      const plan = planSplit(p, path, +$("#sp-rank", ov).value, $("#sp-dir", ov).value.trim());
+      applySplit(p, path, plan); S.secOpen = true; persist(p, true); go("file", { file: path }, true);
+      toast(`Split into ${plan.chunks.length} sections. Save a version to keep the change.`); return true;
+    } }]
+  });
+}
+function addSectionFlow(p, path) {
+  const fmt = secFmt(path), incs = secIncludes(p, path).filter(s => s.exists);
+  const sib = incs[0] ? secHeadings(p.working[incs[0].path].text, fmt)[0] : null;
+  const rank = sib ? sib.rank : fmt === "tex" ? (/\\chapter\b/.test(p.working[path].text) || /documentclass(\[[^\]]*\])?\{(book|report)/.test(p.working[path].text) ? 1 : 2) : 2;
+  const dir = incs[0] ? dirOf(incs[0].path) : normPath(dirOf(path) + (dirOf(path) ? stemOf(path) : stemOf(path) === "main" ? "sections" : stemOf(path))) + "/";
+  modal({
+    title: "Add a section",
+    body: `<label for="as-title">Section title<input type="text" id="as-title" placeholder="e.g. Background"></label>
+      <label for="as-pos">Position<select class="form" id="as-pos">${incs.map((s, i) => `<option value="${i}">Before ${esc(secTitle(p, s.path))}</option>`).join("")}<option value="end" selected>At the end</option></select></label>
+      <p class="muted" style="font-size:12px">Creates <span class="mono" id="as-path">${esc(dir)}…</span></p>`,
+    onOpen: ov => { const i = $("#as-title", ov); i.oninput = () => $("#as-path", ov).textContent = dir + (slug(i.value) || "…") + (fmt === "tex" ? ".tex" : "." + extOf(path)); i.onkeydown = e => { if (e.key === "Enter") $(".mactions .btn-primary", ov).click(); }; },
+    actions: [{ label: "Cancel" }, { label: "Add section", primary: true, onClick: ov => {
+      const title = $("#as-title", ov).value.trim(); if (!title) return false;
+      const file = freePath(p, dir + (slug(title) || "section") + (fmt === "tex" ? ".tex" : "." + extOf(path)), new Set());
+      const heading = fmt === "tex" ? `\\${Object.keys(TEX_RANK).find(k => TEX_RANK[k] === rank)}{${title}}` : `${"#".repeat(rank)} ${title}`;
+      p.working[file] = { text: heading + "\n\n", orig: null };
+      const pos = $("#as-pos", ov).value, lines = p.working[path].text.split("\n");
+      const at = pos === "end" ? secInsertAt(p, path) : secIncludes(p, path).filter(s => s.exists)[+pos].line;
+      const add = [incLine(path, file, fmt)]; if (!incs.length && at > 0 && lines[at - 1].trim()) add.unshift(""); if (!incs.length && lines[at] && lines[at].trim()) add.push("");
+      lines.splice(at, 0, ...add); p.working[path].text = lines.join("\n"); persist(p, true);
+      S.secOpen = true; go("file", { file, fileMode: "write" }); toast(`Added “${title}”. It's listed in ${path}.`); return true;
+    } }]
+  });
+}
+
 /* ============ Boot ============ */
 const ROUTES = ["home", "profile", "files", "history", "drafts", "reviews", "notes", "refs", "live", "insights", "compare", "import", "settings"];
 let autoSynced = new Set();
@@ -3812,12 +4059,15 @@ function autoSync() { const p = P(); if (p && isRemote(p) && ghSignedIn() && !au
   S.pid = S.projects[0].id; resetSel();
   const h = location.hash.slice(1);
   S.route = ROUTES.includes(h) ? h : "home";
+  // Start history at Home, so Back from any screen you land on stays in Writer's Box.
+  try { const want = S.route; S.route = "home"; history.replaceState(navState(), "", "#home"); S.route = want; if (want !== "home") history.pushState(navState(), "", navHash()); } catch (e) { /* ignore */ }
+  window.addEventListener("popstate", onNavPop);
   render();
   if (GH.token) {
     try { GH.user = await gh("/user"); render(); autoSync(); }
     catch (e) { if (e.status === 401) { ghSignOut(); toast("Your GitHub sign-in expired. Sign in again to sync."); } render(); }
   }
-  window.addEventListener("hashchange", () => { const v = location.hash.slice(1); const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route; if (ROUTES.includes(v) && v !== tab) { S.route = v; render(); } });
+  window.addEventListener("hashchange", () => { if (history.state && history.state.route) return; const v = location.hash.slice(1); if (ROUTES.includes(v)) go(v, {}, true); });
 })();
 </script>
 </body>

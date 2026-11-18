@@ -29,6 +29,10 @@ const P_ = {
   merge: '<path d="M2 1.75h4v5H2zM10 1.75h4v5h-4z"/><path d="M4 6.75v1c0 1 .75 1.75 1.75 1.75h4.5c1 0 1.75-.75 1.75-1.75v-1M8 9.5v4.75M6.5 12.75 8 14.25l1.5-1.5"/>',
   /* write = a pen nib */
   pencil: '<path d="M8 14.25 4.25 8.5 6 3.25h4l1.75 5.25z"/><path d="M8 14.25V9.5"/><circle cx="8" cy="8.25" r=".9"/><path d="M5.75 1.5h4.5"/>',
+  sections: '<path d="M3.75 2.75h8.5v3h-8.5zM3.75 6.5h8.5v3h-8.5zM3.75 10.25h8.5v3h-8.5z"/>',
+  kebab: '<circle cx="8" cy="3.5" r=".9" fill="currentColor"/><circle cx="8" cy="8" r=".9" fill="currentColor"/><circle cx="8" cy="12.5" r=".9" fill="currentColor"/>',
+  chevronUp: '<path d="M4.5 10l3.5-3.5 3.5 3.5"/>',
+  chevronDown: '<path d="M4.5 6l3.5 3.5 3.5-3.5"/>',
   quote: '<path d="M2.75 8.5h3.5v4.25H2.75zM2.75 8.5c0-2.6 1-4.4 3.25-5.25M9.75 8.5h3.5v4.25h-3.5zM9.75 8.5c0-2.6 1-4.4 3.25-5.25"/>',
   pilcrow: '<path d="M7.5 2.25v11.5M10.25 2.25v11.5M12 2.25H6.5a2.75 2.75 0 0 0 0 5.5h1"/>',
   x: '<path d="M4 4l8 8M12 4l-8 8"/>',
@@ -49,7 +53,7 @@ const P_ = {
 const ic = (name, cls = "") => `<svg class="oc ${cls}" viewBox="0 0 16 16" aria-hidden="true">${P_[name]}</svg>`;
 const ICON = { x: ic("x") };
 const fileIcon = path => ic({ LaTeX: "fileTex", BibTeX: "fileBib", Markdown: "fileMd", Word: "fileWord", Spreadsheet: "fileSheet", CSV: "fileSheet" }[typeLabel(path)] || "file");
-const LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="8" fill="currentColor"/><path d="M10 9.5h9l3 3V23H10z" fill="none" stroke="var(--header-bg)" stroke-width="2" stroke-linejoin="round"/><path d="M13 15h6M13 18.5h4" stroke="var(--header-bg)" stroke-width="2" stroke-linecap="round"/></svg>`;
+const LOGO = `<svg class="logo" viewBox="108 100 260 266" aria-hidden="true" fill="currentColor"><path d="M132 140 264 112 355 177 203 212z"/><path d="M118 147 196 214v44L118 191z"/><path d="M206 217 357 181v41L206 258z"/><path d="M130 213 197 271v86L130 299z"/><path d="M207 271 342 238v80L207 357z"/></svg>`;
 const TYPE_COLOR = { Spreadsheet: "#0f7b6c", CSV: "#52a37a", LaTeX: "#3d6117", BibTeX: "#778899", Markdown: "#083fa1", Word: "#2b6cb0", Text: "#9198a1" };
 
 /* ============ Extra format adapters ============ */
@@ -323,11 +327,22 @@ function diffstatBlocks(ins, del) {
   const a = Math.round(5 * ins / tot), d = Math.min(5 - a, Math.round(5 * del / tot));
   return `<span class="diffstat">${"<i class='a'></i>".repeat(a)}${"<i class='d'></i>".repeat(d)}${"<i></i>".repeat(5 - a - d)}</span>`;
 }
-function go(route, extra = {}) {
+/* Browser history: every screen change is a history entry, so Back and Forward move through Writer's Box. */
+const NAV_KEYS = ["route", "pid", "file", "dir", "vid", "cmp", "num", "fileMode"];
+const navState = () => Object.fromEntries(NAV_KEYS.map(k => [k, S[k] === undefined ? null : JSON.parse(JSON.stringify(S[k]))]));
+const navHash = () => "#" + ({ file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route);
+function go(route, extra = {}, replace = false) {
+  const before = JSON.stringify(navState());
   Object.assign(S, extra); S.route = route;
-  const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[route] || route;
-  try { history.replaceState(null, "", "#" + tab); } catch (e) { /* ignore */ }
-  render(); window.scrollTo(0, 0);
+  const st = navState();
+  try { if (replace || JSON.stringify(st) === before) history.replaceState(st, "", navHash()); else history.pushState(st, "", navHash()); } catch (e) { /* ignore */ }
+  render(); if (!replace) window.scrollTo(0, 0);
+}
+function onNavPop(e) {
+  const st = e.state; if (!st || !st.route) return;
+  document.querySelectorAll("#layer .overlay").forEach(o => { const x = o.querySelector("[data-x]"); if (x) x.click(); else o.remove(); });
+  if (st.pid && !S.projects.some(x => x.id === st.pid)) return;
+  Object.assign(S, st); render();
 }
 
 /* ============ Shell ============ */
@@ -431,7 +446,7 @@ function viewFiles(p, el) {
         ${all.length ? `<table class="ftable"><tbody>
           ${S.dir ? `<tr><td class="ic">${ic("up")}</td><td class="nm" colspan="3"><button class="link" data-dir="${esc(S.dir.split("/").slice(0, -1).join("/"))}">..</button></td></tr>` : ""}
           ${[...folders.keys()].sort().map(f => row(ic("folder", "solid folder"), f, `data-dir="${esc(pre + f)}"`, touchOf(folders.get(f)), folders.get(f).some(x => fileStatus(p, x) !== "clean") ? `<span class="label label-attention">Changes</span>` : "")).join("")}
-          ${files.map(path => { const st = fileStatus(p, path); return row(fileIcon(path), path.slice(pre.length), `data-file="${esc(path)}"`, lt[path], statusLabel(st), st === "deleted" ? "del" : ""); }).join("")}
+          ${files.map(path => { const st = fileStatus(p, path); return row(fileIcon(path), path.slice(pre.length), `data-file="${esc(path)}"`, lt[path], (secFmt(path) && p.working[path] && secIncludes(p, path).length ? `<span class="label" title="Made of section files">${ic("sections")} ${secIncludes(p, path).length} sections</span> ` : "") + statusLabel(st), st === "deleted" ? "del" : ""); }).join("")}
         </tbody></table>` : `<div class="blankslate">${ic("import")}<h3>Bring in your writing</h3><p class="muted">Import Google Docs, Word files or a LaTeX project, or start a new file.</p><div class="row"><button class="btn btn-primary" data-tab="import">Import documents</button></div></div>`}
       </div>
     </div>
@@ -470,9 +485,10 @@ function viewFile(p, el) {
   if (!f) return go("files");
   const parts = path.split("/"), st = fileStatus(p, path), lt = lastTouch(p)[path], docx = kindOf(path) === "docx", sheet = kindOf(path) === "sheet";
   const mode = S.fileMode || "write";
-  const lines = f.text.split("\n");
+  const secInc = secFmt(path) ? secIncludes(p, path) : [];
+  const lines = (mode === "preview" && secInc.length ? assemble(p, path) : f.text).split("\n");
   const dlOpts = sheet ? [["orig", `Original (.${extOf(path)})`], ...(extOf(path) !== "xlsx" ? [["xlsx", "As Excel (.xlsx)"]] : []), ["csvs", "As CSV (.csv)"]]
-    : [["orig", `Original (.${extOf(path)})`], ...(["md", "markdown", "txt"].includes(extOf(path)) ? [["docx", "As Word (.docx)"]] : []), ...(extOf(path) !== "txt" ? [["txt", "As plain text (.txt)"]] : [])];
+    : [["orig", `Original (.${extOf(path)})`], ...(["md", "markdown", "txt"].includes(extOf(path)) ? [["docx", "As Word (.docx)"]] : []), ...(extOf(path) !== "txt" ? [["txt", "As plain text (.txt)"]] : []), ...(secInc.length ? [["combined", "Whole document, sections combined"]] : [])];
   const metaText = () => sheet ? sheetSummary(f.text) : `${f.text.split("\n").length} ${docx ? "paragraphs" : "lines"} · ${wordCount(f.text).toLocaleString()} words`;
   el.innerHTML = `
     ${unsavedFlash(p)}
@@ -482,12 +498,14 @@ function viewFile(p, el) {
       <button class="btn btn-sm" data-tab="history">${ic("history")} History</button></div></div>
     ${liveOf(p, path) ? `<div class="flash info live-flash">${ic("people")}<span>Live in <strong>${esc(liveTarget(liveOf(p, path).provider, path))}</strong> · <span data-lst>${liveOf(p, path).lastSeen ? liveStateHtml(liveOf(p, path)) : "shared " + ago(liveOf(p, path).sharedAt)}</span></span><span class="grow"></span><button class="btn btn-sm btn-primary" data-lback>${ic("import")} Bring changes back</button><a class="btn btn-sm" href="${esc(liveOf(p, path).url)}" target="_blank" rel="noopener">Open</a></div>` : ""}
     ${docx || sheet ? `<div class="flash info" id="docx-note">${ic("info")}<span>${noteFor(path, f)}</span></div>` : ""}
+    ${sectionsBar(p, path)}
     <div class="Box">
       <div class="Box-header blob-head">
         <div class="seg" role="group" aria-label="Mode"><button aria-pressed="${mode === "write"}" data-mode="write">${ic(sheet ? "fileSheet" : "pencil")} ${sheet ? "Cells" : "Write"}</button><button aria-pressed="${mode === "preview"}" data-mode="preview">${sheet ? "As text" : "Preview"}</button><button aria-pressed="${mode === "blame"}" data-mode="blame" title="Which version last changed each ${docx ? "paragraph" : sheet ? "row" : "line"}">${ic("history")} Line history</button></div>
         <span class="muted" id="f-meta">${metaText()}</span>
         <span class="label">${typeLabel(path)}</span><span id="f-status">${statusLabel(st)}</span>
         <span class="grow"></span>
+        ${secFmt(path) && !secInc.length ? `<button class="btn btn-sm" id="f-sec" title="Split this document into section files">${ic("sections")} Sections</button>` : ""}
         ${mode === "write" && !sheet ? `<button class="btn btn-sm" id="f-cite" title="Insert a citation at the cursor">${ic("quote")} Cite</button>` : ""}
         <button class="btn btn-sm" id="f-live">${ic("people")} ${liveOf(p, path) ? "Live" : "Collaborate live"}</button>
         <button class="btn btn-sm" id="f-cmp">${ic("compare")} Changes</button>
@@ -522,6 +540,8 @@ function viewFile(p, el) {
   if (mode === "blame") blameView(p, path, $("#blame-mount"));
   $("#f-cmp").onclick = () => go("compare", { cmp: { a: headId(p), b: "W" } });
   $("#f-live").onclick = () => shareLiveFlow(p, path);
+  bindSections(p, path, el);
+  const sb = $("#f-sec"); if (sb) sb.onclick = () => sectionsFlow(p, path);
   const ct = $("#f-cite"); if (ct) ct.onclick = () => citeFlow(p, path, $("#ed"));
   if (ta && S.citeCaret != null) { ta.focus(); ta.setSelectionRange(S.citeCaret, S.citeCaret); S.citeCaret = null; }
   const lb = el.querySelector("[data-lback]"); if (lb) lb.onclick = () => bringBackFlow(p, path);
@@ -1055,7 +1075,8 @@ function pasteCellsFlow(p) {
 /* ============ Downloads ============ */
 async function downloadAs(p, path, how) {
   const f = p.working[path]; const base = path.split("/").pop(), stem = base.replace(/\.[^.]+$/, "");
-  if (how === "docx") return offerFile(stem + ".docx", mdToDocx(f.text));
+  if (how === "combined") { const t = assemble(p, path); return offerFile(base, t, t); }
+  if (how === "docx") return offerFile(stem + ".docx", mdToDocx(secFmt(path) ? assemble(p, path) : f.text));
   if (how === "txt") return offerFile(stem + ".txt", f.text, f.text);
   if (how === "xlsx") return offerFile(stem + ".xlsx", xlsxFromText(f.text));
   if (how === "csvs") {
