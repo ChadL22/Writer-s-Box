@@ -520,6 +520,34 @@ ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column;
 .sec-plan { max-height: 300px; overflow: auto; }
 .sec-plan .Box-row { gap: 10px; }
 .btn-octicon[disabled] { opacity: .35; cursor: default; }
+/* Format */
+.fm-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .fm-grid { grid-template-columns: 1fr; } }
+.fm-controls select.form { min-width: 200px; margin-top: 4px; }
+.fm-preview { display: flex; gap: 16px; overflow-x: auto; padding: 16px; margin-top: 16px; background: var(--canvas-subtle); border: 1px solid var(--border); border-radius: 6px; }
+.pp-page { position: relative; flex: 0 0 auto; background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06); overflow: hidden; }
+.pp-page p { margin: 0; overflow-wrap: anywhere; }
+.pp-body { overflow: hidden; }
+.pp-hdr { position: absolute; display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.pp-hdr span:nth-child(2) { text-align: center; } .pp-hdr span:nth-child(3) { text-align: right; }
+.pp-notes { position: absolute; border-top: 1px solid #999; padding-top: 4px; background: #fff; line-height: 1.2; }
+.pp-notes p { text-indent: 2em; }
+.pp-label { position: absolute; left: 0; right: 0; bottom: -1px; text-align: center; font: 600 11px var(--sans, system-ui); color: #57606a; background: rgba(246,248,250,.92); padding: 3px; border-top: 1px solid #d0d7de; }
+.fm-fields label { margin-bottom: 8px; }
+.fm-check { gap: 8px; font-size: 13px; align-items: flex-start; }
+.fm-check.ok svg.oc { color: var(--success, #1a7f37); } .fm-check.todo svg.oc { color: var(--attention, #9a6700); }
+.fm-rules-h { background: var(--canvas-subtle); }
+.fm-rule { font-weight: 400; font-size: 13px; align-items: flex-start; gap: 8px; }
+.fm-styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.fm-card.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.fm-card .Box-header { gap: 8px; }
+.se-h { margin: 16px 0 6px; font-size: 13px; }
+.se-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0 12px; }
+.se-grid > label { margin-bottom: 8px; }
+.se-heads { border-collapse: collapse; font-size: 12px; width: 100%; }
+.se-heads th { text-align: left; font-weight: 600; padding: 4px; color: var(--muted); }
+.se-heads td { padding: 3px 4px; }
+.se-heads select.form { height: 28px; padding: 0 6px; font-size: 12px; }
 </style>
 </head>
 <body>

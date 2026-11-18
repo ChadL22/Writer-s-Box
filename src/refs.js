@@ -97,8 +97,12 @@ const REF_TYPES = [
   ["phdthesis", "PhD thesis", ["school", "url"]],
   ["mastersthesis", "Master's thesis", ["school", "url"]],
   ["online", "Website", ["howpublished", "url", "urldate"]],
+  ["jurisdiction", "Court case", ["volume", "journal", "pages", "institution", "url"]],
+  ["legislation", "Statute or law", ["volume", "journal", "pages", "url"]],
   ["misc", "Other", ["howpublished", "publisher", "url"]]
 ];
+const TYPE_LABEL = { jurisdiction: { volume: "Reporter volume", journal: "Reporter (e.g. U.S., F.3d)", pages: "First page", institution: "Court (e.g. 9th Cir.; leave empty for the Supreme Court)" }, legislation: { volume: "Title number", journal: "Code (e.g. U.S.C.)", pages: "Section", title: "Name of act" } };
+const fieldLabel = (t, k) => (TYPE_LABEL[t] || {})[k] || FIELD_LABEL[k] || k;
 const FIELD_LABEL = { journal: "Journal", volume: "Volume", number: "Issue / number", pages: "Pages", doi: "DOI", url: "URL", publisher: "Publisher", address: "Place published", edition: "Edition", isbn: "ISBN", editor: "Editors (one per line)", booktitle: "Book or proceedings title", institution: "Institution", school: "University", howpublished: "Site or publisher", urldate: "Accessed (YYYY-MM-DD)" };
 const typeName = t => (REF_TYPES.find(x => x[0] === t) || [t, t.charAt(0).toUpperCase() + t.slice(1)])[1];
 function refView(e) {
@@ -195,7 +199,7 @@ async function lookupDoi(doi) {
 }
 
 /* ---------- formatted references ---------- */
-const STYLES = { apa: "APA 7", chicago: "Chicago (author-date)", mla: "MLA 9" };
+const STYLES = { apa: "APA 7", chicago: "Chicago (author-date)", mla: "MLA 9", bluebook: "Bluebook (legal)" };
 function nameList(list, style) {
   if (!list.length) return "";
   const inv = (n, first) => n.literal ? n.literal : style === "apa" ? `${n.family}, ${initials(n.given)}`.replace(/, $/, "") : first ? (n.given ? `${n.family}, ${n.given}` : n.family) : (n.given ? `${n.given} ${n.family}` : n.family);
@@ -230,6 +234,7 @@ function formatRef(r, style = "apa") {
       default: return [head, r.type === "techreport" || r.type.includes("thesis") || r.type === "online" || r.type === "misc" ? itDot(t) : `“${endDot(t)}”`, r.container || r.publisher ? endDot(r.container || r.publisher) : "", link ? endDot(link) : ""].filter(Boolean).join(" ");
     }
   }
+  if (style === "bluebook" || r.type === "jurisdiction" || r.type === "legislation") return bluebookRef(r);  // APA, MLA and Chicago all defer to Bluebook for legal sources
   const head = endDot(au);
   switch (r.type) {
     case "article": return [head, `“${endDot(t)}”`, `*${r.container}*${vol ? `, vol. ${vol}` : ""}${num ? `, no. ${num}` : ""}, ${yr}${pages ? `, pp. ${pages}` : ""}.`, link ? endDot(link) : ""].filter(Boolean).join(" ");
@@ -238,8 +243,35 @@ function formatRef(r, style = "apa") {
     default: return [head, itDot(t), `${r.container || r.publisher ? (r.container || r.publisher) + ", " : ""}${yr}.`, link ? endDot(link) : ""].filter(Boolean).join(" ");
   }
 }
+/* Bluebook full citation (law review footnote form, italics in place of small capitals) */
+function bbAuthors(list) { const n = list.map(a => a.literal || [a.given, a.family].filter(Boolean).join(" ")); return n.length <= 2 ? n.join(" & ") : n[0] + " et al."; }
+function bluebookRef(r, pin) {
+  const f = r.fields, vol = texText(f.volume || ""), pg = texText(f.pages || "").split(/[-–]/)[0], yr = r.year || "", at = pin ? `, ${pin}` : "";
+  switch (r.type) {
+    case "jurisdiction": { const court = texText(f.institution || ""); return `*${r.title}*, ${vol} ${texText(f.journal || "")} ${pg}${at} (${court ? court + " " : ""}${yr}).`.replace(/\s+/g, " "); }
+    case "legislation": return `${r.title}, ${vol} ${texText(f.journal || "")} § ${texText(f.pages || "")}${yr ? ` (${yr})` : ""}.`.replace(/\s+/g, " ");
+    case "article": return `${bbAuthors(r.authors)}, *${r.title}*, ${vol} ${r.container} ${pg}${at} (${yr}).`.replace(/^, /, "").replace(/\s+/g, " ");
+    case "book": return `${bbAuthors(r.authors)}, *${r.title}*${at ? " " + pin : ""} (${texText(f.edition || "") ? texText(f.edition) + " ed. " : ""}${yr}).`.replace(/^, /, "");
+    case "incollection": return `${bbAuthors(r.authors)}, *${r.title}*, in ${r.container}${at ? " " + pin : ""} (${r.editors.length ? bbAuthors(r.editors) + " ed., " : ""}${yr}).`.replace(/^, /, "");
+    default: { const link = r.doi ? `https://doi.org/${r.doi}` : r.url; return `${r.authors.length ? bbAuthors(r.authors) + ", " : ""}*${r.title}*${r.container || r.publisher ? ", " + (r.container || r.publisher) : ""}${yr ? ` (${yr})` : ""}${link ? ", " + link : ""}.`; }
+  }
+}
+/* Chicago notes-bibliography: full first note */
+function chicagoNote(r, pin) {
+  const f = r.fields, names = r.authors.map(a => a.literal || [a.given, a.family].filter(Boolean).join(" ")), au = names.length <= 2 ? names.join(" and ") : names.length === 3 ? `${names[0]}, ${names[1]}, and ${names[2]}` : names[0] + " et al.";
+  const yr = r.year || "n.d.", pg = pin ? `, ${pin}` : "", link = r.doi ? `https://doi.org/${r.doi}` : r.url;
+  switch (r.type) {
+    case "article": return `${au ? au + ", " : ""}“${r.title},” *${r.container}*${f.volume ? " " + texText(f.volume) : ""}${f.number ? ", no. " + texText(f.number) : ""} (${yr})${pin ? ": " + pin : ""}${link ? ", " + link : ""}.`;
+    case "book": return `${au ? au + ", " : ""}*${r.title}* (${r.publisher ? r.publisher + ", " : ""}${yr})${pg}.`;
+    case "incollection": case "inproceedings": return `${au ? au + ", " : ""}“${r.title},” in *${r.container}*${r.editors.length ? ", ed. " + r.editors.map(a => [a.given, a.family].filter(Boolean).join(" ")).join(" and ") : ""} (${r.publisher ? r.publisher + ", " : ""}${yr})${pg}.`;
+    case "jurisdiction": case "legislation": return bluebookRef(r, pin);
+    default: return `${au ? au + ", " : ""}*${r.title}*${r.container || r.publisher ? ", " + (r.container || r.publisher) : ""}, ${yr}${pg}${link ? ", " + link : ""}.`;
+  }
+}
+const shortTitle = t => { const w = t.replace(/[:.].*$/, "").split(/\s+/); return w.length > 4 ? w.slice(0, 4).join(" ") : w.join(" "); };
 const refHtml = s => esc(s).replace(/\*([^*]+)\*/g, "<em>$1</em>").replace(/(https?:\/\/[^\s<]+[^\s<.,;])/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 function inTextCite(r, style = "apa") {
+  if (style === "bluebook") return r.type === "jurisdiction" ? `*${r.title}*` : (r.authors[0] ? familyOf(r.authors[0]) + ", " : "") + `*${shortTitle(r.title)}*`;
   const a = r.authors, fam = a.map(familyOf);
   const who = !a.length ? (r.title.split(/\s+/).slice(0, 3).join(" ")) : a.length === 1 ? fam[0] : a.length === 2 ? `${fam[0]} ${style === "apa" ? "&" : "and"} ${fam[1]}` : `${fam[0]} et al.`;
   return style === "mla" ? `(${who})` : `(${who}${style === "apa" ? "," : ""} ${r.year || "n.d."})`;
@@ -347,7 +379,7 @@ function editRefFlow(p, r, after, presetKey) {
   const known = new Set(["author", "title", "year", "keywords", "note", "abstract", ...REF_TYPES.flatMap(x => x[2])]);
   const extra = Object.entries(f).filter(([k]) => !known.has(k)).map(([k, v]) => `${k} = ${v}`).join("\n");
   const namesText = s => parseNames(s).map(n => n.literal ? n.literal : n.given ? `${n.family}, ${n.given}` : n.family).join("\n");
-  const typeFields = t => fieldsFor(t).map(k => k === "editor" ? `<label for="rf-editor">${FIELD_LABEL[k]}<textarea class="form" id="rf-editor" rows="2" placeholder="Family, Given">${esc(namesText(f.editor))}</textarea></label>` : `<label for="rf-${k}">${FIELD_LABEL[k] || k}<input type="text" id="rf-${k}" value="${esc(f[k] || "")}"></label>`).join("");
+  const typeFields = t => fieldsFor(t).map(k => k === "editor" ? `<label for="rf-editor">${fieldLabel(t, k)}<textarea class="form" id="rf-editor" rows="2" placeholder="Family, Given">${esc(namesText(f.editor))}</textarea></label>` : `<label for="rf-${k}">${fieldLabel(t, k)}<input type="text" id="rf-${k}" value="${esc(f[k] || "")}"></label>`).join("");
   modal({
     title: isNew ? "Add a reference" : `Edit ${r.key}`,
     body: `${isNew ? `<div class="row"><label for="rf-doi" style="flex:1">Fill in from a DOI <span class="muted" style="font-weight:400">(optional)</span><input type="text" id="rf-doi" placeholder="10.1000/xyz123 or https://doi.org/…"></label><button class="btn" id="rf-doi-go" style="align-self:flex-end">Look up</button></div>` : ""}

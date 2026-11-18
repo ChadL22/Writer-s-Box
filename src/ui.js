@@ -33,6 +33,7 @@ const P_ = {
   kebab: '<circle cx="8" cy="3.5" r=".9" fill="currentColor"/><circle cx="8" cy="8" r=".9" fill="currentColor"/><circle cx="8" cy="12.5" r=".9" fill="currentColor"/>',
   chevronUp: '<path d="M4.5 10l3.5-3.5 3.5 3.5"/>',
   chevronDown: '<path d="M4.5 6l3.5 3.5 3.5-3.5"/>',
+  format: '<path d="M1.75 13.25 5.5 2.75h1l3.75 10.5M3.1 9.5h5.8M11.25 8.25c.4-.6 1-.9 1.75-.9 1.1 0 1.75.7 1.75 1.8v4.1M14.75 10.6c-2.4 0-3.5.6-3.5 1.6 0 .7.5 1.15 1.3 1.15 1.2 0 2.2-.9 2.2-2.2"/>',
   quote: '<path d="M2.75 8.5h3.5v4.25H2.75zM2.75 8.5c0-2.6 1-4.4 3.25-5.25M9.75 8.5h3.5v4.25h-3.5zM9.75 8.5c0-2.6 1-4.4 3.25-5.25"/>',
   pilcrow: '<path d="M7.5 2.25v11.5M10.25 2.25v11.5M12 2.25H6.5a2.75 2.75 0 0 0 0 5.5h1"/>',
   x: '<path d="M4 4l8 8M12 4l-8 8"/>',
@@ -371,7 +372,7 @@ function renderRepoHead() {
   const nV = Object.keys(p.versions).length, nD = Object.keys(p.drafts).length, remote = isRemote(p);
   const tab = { file: "files", version: "history", review: "reviews", note: "notes" }[S.route] || S.route;
   const cnt = k => { const c = GH.cache[`${k}:${p.id}:open`]; return c ? c.data.length : ""; };
-  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["refs", "quote", "References", refCount(p) || ""], ["live", "people", "Live", Object.keys(p.live || {}).length || ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
+  const tabs = [["files", "manuscript", "Files", ""], ["history", "history", "History", nV], ["drafts", "branch", "Drafts", nD], ["reviews", "merge", "Reviews", remote ? cnt("pr") : ""], ["notes", "pencil", "Notes", remote ? cnt("is") : ""], ["refs", "quote", "References", refCount(p) || ""], ["format", "format", "Format", ""], ["live", "people", "Live", Object.keys(p.live || {}).length || ""], ["insights", "pilcrow", "Insights", ""], ["compare", "compare", "Compare", ""], ["import", "import", "Import", ""], ["settings", "gear", "Settings", ""]];
   el.innerHTML = `<div class="repotitle">${ic("book")}<span class="owner">${esc(remote ? p.remote.owner : "local")}</span><span class="muted">/</span><strong>${esc(remote ? p.remote.repo : p.name)}</strong>
       <span class="label">${remote ? (p.remote.private ? "Private" : "Public") : "Stored on this device"}</span><span class="grow"></span>
       ${remote ? `<span class="muted" style="font-size:12px">${p.remote.syncedAt ? "Synced " + ago(p.remote.syncedAt) : "Not synced yet"}</span><button class="btn btn-sm" id="r-sync" ${ghSignedIn() ? "" : 'title="Sign in to sync"'}>${ic("undo")} Sync</button><a class="btn btn-sm" href="${esc(p.remote.htmlUrl || `https://github.com/${p.remote.owner}/${p.remote.repo}`)}" target="_blank" rel="noopener">View on GitHub</a>`
@@ -388,7 +389,7 @@ function renderView() {
   if (S.route === "profile") return viewProfile(p, el);
   if (!p) { el.innerHTML = `<div class="Box blankslate">${ic("book")}<h3>No projects yet</h3><p class="muted">A project holds a paper, a book or a memo series, with every version you save.</p><button class="btn btn-primary" id="np">New project</button></div>`; $("#np").onclick = createProjectFlow; return; }
   ({ files: viewFiles, file: viewFile, history: viewHistory, version: viewVersion, drafts: viewDrafts, compare: viewCompare, import: viewImport,
-     reviews: viewReviews, review: viewReview, live: viewLive, refs: viewRefs, notes: viewNotes, note: viewNote, insights: viewInsights, settings: viewSettings }[S.route] || viewFiles)(p, el);
+     reviews: viewReviews, review: viewReview, live: viewLive, refs: viewRefs, format: viewFormat, notes: viewNotes, note: viewNote, insights: viewInsights, settings: viewSettings }[S.route] || viewFiles)(p, el);
 }
 function draftPicker(p, id = "draft-sel") {
   const names = Object.keys(p.drafts).sort((a, b) => a === "main" ? -1 : b === "main" ? 1 : a.localeCompare(b));

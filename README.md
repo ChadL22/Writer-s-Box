@@ -62,6 +62,20 @@ Long documents can be split into sections, and each section becomes its own file
 - The main file shows a sections panel where you can open, reorder, add or remove sections. Each section file shows "Section 2 of 5" with Previous and Next buttons.
 - **Preview** shows the whole document assembled. **Download › Whole document** gives one combined file, and Markdown can also download as one Word file. **Combine** puts everything back into a single file.
 
+## Formatting styles
+
+The **Format** tab turns a document into a correctly formatted paper without changing your writing.
+
+- **Built-in styles**, summarized from the Purdue OWL and linked to its pages: APA 7 (student and professional), MLA 9, Chicago 18 (notes and bibliography, and author-date), and a Bluebook legal memo.
+- **Preview** shows the title page (or first-page heading), the first page of text and the reference list. **Formatted Word file** downloads a .docx with the right margins, font, spacing, header or page numbers, title page, heading styles, in-text citations or footnotes, and a reference list with hanging indents. For LaTeX, **Apply to LaTeX** writes a marked preamble block (geometry, spacing, header, heading formats) that's replaced cleanly if you switch styles.
+- **Checklist:** automatic checks (title and details, heading levels, abstract length, citations missing from References, LaTeX style) plus each style's rules to tick off.
+- **Your own styles:** customize any style, or import one from a link, a document (PDF, Word, Markdown, text, HTML) or pasted requirements. Without AI, Writer's Box picks out margins, font, size, spacing, indent, page numbers and the reference list title, and turns the formatting sentences into a checklist. Styles export and import as `.style.json`.
+- **Copy a paper's structure:** read a model paper's headings and section lengths (and, for Word files, its page set-up) and start a new outline with length targets, optionally split into section files. None of the model's text is copied.
+
+### AI (optional, through OpenRouter)
+
+Connect OpenRouter in **Settings › Connections** (one-click sign-in on the hosted site, or paste a key). It's used only when you ask: reading style guides from sites that block other sites (like the Purdue OWL) or from PDFs, and describing each section's purpose when copying a structure. The key stays in your browser; text goes to OpenRouter and the model you choose. AI features don't work inside Claude's preview.
+
 ## How Writer's Box maps onto GitHub
 
 | Writer's Box | GitHub |
@@ -91,6 +105,8 @@ writers-box/
 │   ├── collab.js       ← home, profile, reviews, notes, insights, line history, settings
 │   ├── live.js         ← live collaboration via Google Drive and OneDrive (share, status, bring back, comments)
 │   ├── refs.js         ← references: BibTeX/RIS/CSL-JSON, DOI lookup, APA/Chicago/MLA, citation check, References tab
+│   ├── llm.js          ← optional AI through OpenRouter (sign-in, chat, PDF and web reading)
+│   ├── format.js       ← formatting styles, Word export, LaTeX preamble, checklist, style import, structure copy
 │   ├── sections.js     ← splitting documents into section files, sections panel, assembling
 │   └── main.js         ← boot and routing
 ├── tests/
@@ -98,6 +114,7 @@ writers-box/
 │   ├── test_github.py  ← GitHub-mode tests against a mock GitHub API (26 checks)
 │   ├── mock_github.js  ← in-memory stand-in for the GitHub REST API
 │   ├── test_refs.py    ← references tests: BibTeX engine, import/export, citing (45 checks)
+│   ├── test_format.py  ← styles, Word output (python-docx + LibreOffice), LaTeX, style import, structure, OpenRouter (63 checks)
 │   ├── test_sections.py ← sections and Back/Forward navigation (32 checks)
 │   ├── test_live.py    ← live-collaboration tests against mock Google and Microsoft APIs (17 checks)
 │   ├── mock_live.js    ← in-memory stand-ins for Google Drive/sign-in and Microsoft Graph/sign-in
@@ -114,7 +131,7 @@ Edit files in `src/`, then run `./build.sh` (in VS Code's terminal, Ctrl+`) to r
 ```bash
 pip install playwright openpyxl
 python -m playwright install chromium
-./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py
+./build.sh && python3 tests/test_app.py && python3 tests/test_github.py && python3 tests/test_live.py && python3 tests/test_refs.py && python3 tests/test_sections.py && python3 tests/test_format.py
 ```
 
 The GitHub tests run every flow against `tests/mock_github.js`, so they need no account or network:

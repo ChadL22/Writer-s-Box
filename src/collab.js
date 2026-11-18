@@ -489,11 +489,14 @@ function viewSettings(p, el) {
     ${remote ? `<h2 class="set-h">Collaborators</h2><div class="Box" id="st-co"><div class="Box-body muted">${ghSignedIn() ? "Loading…" : "Sign in to see collaborators."}</div></div>` : ""}
     <h2 class="set-h">Connections</h2>
     <div class="Box">${["google", "microsoft"].map(pv => `<div class="Box-row"><div class="grow"><strong>${PROVIDERS[pv].doc}${pv === "google" ? " & Sheets" : " & Excel"}</strong><div class="muted">${liveClientId(pv) ? "Set up: you can share files for live editing." : "Not set up. Needed to share files for live editing with people who don't use GitHub."}</div></div><button class="btn btn-sm" data-conn="${pv}">${liveClientId(pv) ? "Change" : "Set up"}</button></div>`).join("")}</div>
+    <h2 class="set-h">AI</h2>
+    <div class="Box">${llmSettingsRow()}</div>
     <h2 class="set-h">Backups</h2>
     <div class="Box"><div class="Box-row"><div class="grow"><strong>Export a backup</strong><div class="muted">Every version, draft and milestone in one .json file.</div></div><button class="btn btn-sm" id="st-exp">Export</button></div>
       <div class="Box-row"><div class="grow"><strong>Restore a backup</strong><div class="muted">Open a .writersbox.json file as a project.</div></div><label class="btn btn-sm" for="st-imp">Choose file</label><input type="file" id="st-imp" accept=".json,application/json" hidden></div></div>
     <h2 class="set-h danger-h">Danger zone</h2>
     <div class="Box danger"><div class="Box-row"><div class="grow"><strong>Remove from this browser</strong><div class="muted">${remote ? "Deletes the local copy only. The GitHub repository and its history stay." : "Deletes the project and every version from this browser."}</div></div><button class="btn btn-sm btn-danger" id="st-del">Remove</button></div></div></div>`;
+  $("#st-llm").onclick = () => llmSetupFlow(() => go("settings", {}, true));
   $("#st-ren").onclick = async () => { const n = await askText("Rename project", "Project name", p.name, "Rename"); if (n) { p.name = n; persist(p, true); render(); } };
   $("#st-desc").onclick = async () => { const d = await askText("Edit description", "Description", p.description || "", "Save"); if (d !== null) { p.description = d; persist(p, true); if (remote && ghSignedIn()) gh(repoPath(p), { method: "PATCH", body: { description: d } }).catch(e => toast(e.message)); render(); } };
   const pub = $("#st-pub"); if (pub) pub.onclick = () => ghSignedIn() ? publishFlow(p) : signInFlow();
